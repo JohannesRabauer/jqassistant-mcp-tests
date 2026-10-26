@@ -1,0 +1,30 @@
+[ERROR] COMPILATION ERROR : 
+[ERROR] /src/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/persistent/ReplicatedSubscriptionsController.java:[219,74] cannot find symbol
+  symbol:   method getLedger()
+  location: variable updatedMessageId of type org.apache.pulsar.common.api.proto.MarkersMessageIdData
+[ERROR] /src/pulsar-broker/src/main/java/org/apache/pulsar/broker/admin/impl/PersistentTopicsBase.java:[2843,70] cannot find symbol
+  symbol:   method getLedgerId()
+  location: variable __ of type org.apache.bookkeeper.mledger.Position
+[ERROR] /src/pulsar-broker/src/main/java/org/apache/pulsar/broker/delayed/bucket/BucketDelayedDeliveryTracker.java:[898,40] cannot find symbol
+  symbol:   method getLedgerId()
+  location: variable mdp of type org.apache.bookkeeper.mledger.Position
+[ERROR] Failed to execute goal org.apache.maven.plugins:maven-compiler-plugin:3.11.0:compile (default-compile) on project pulsar-broker: Compilation failure: Compilation failure: 
+[ERROR] /src/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/persistent/ReplicatedSubscriptionsController.java:[219,74] cannot find symbol
+[ERROR]   symbol:   method getLedger()
+[ERROR]   location: variable updatedMessageId of type org.apache.pulsar.common.api.proto.MarkersMessageIdData
+[ERROR] /src/pulsar-broker/src/main/java/org/apache/pulsar/broker/admin/impl/PersistentTopicsBase.java:[2843,70] cannot find symbol
+[ERROR]   symbol:   method getLedgerId()
+[ERROR]   location: variable __ of type org.apache.bookkeeper.mledger.Position
+[ERROR] /src/pulsar-broker/src/main/java/org/apache/pulsar/broker/delayed/bucket/BucketDelayedDeliveryTracker.java:[898,40] cannot find symbol
+[ERROR]   symbol:   method getLedgerId()
+[ERROR]   location: variable mdp of type org.apache.bookkeeper.mledger.Position
+[ERROR] -> [Help 1]
+[ERROR] 
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException
+[ERROR] 
+[ERROR] After correcting the problems, you can resume the build with the command
+[ERROR]   mvn <args> -rf :pulsar-broker

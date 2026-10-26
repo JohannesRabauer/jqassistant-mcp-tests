@@ -1,0 +1,73 @@
+[
+ {
+  "id": "T02",
+  "type": "qa",
+  "prompt": "List every non-test class in the Pulsar repository (modules pulsar-broker, pulsar-broker-common, pulsar-client-original, pulsar-common, pulsar-metadata, managed-ledger) that implements or extends the interface org.apache.pulsar.broker.service.Topic, directly or transitively. Exclude anonymous and inner classes. Answer with one fully qualified class name per line, then stop. Do not modify any files.",
+  "expected": [
+   "org.apache.pulsar.broker.service.AbstractTopic",
+   "org.apache.pulsar.broker.service.nonpersistent.NonPersistentSystemTopic",
+   "org.apache.pulsar.broker.service.nonpersistent.NonPersistentTopic",
+   "org.apache.pulsar.broker.service.persistent.PersistentTopic",
+   "org.apache.pulsar.broker.service.persistent.SystemTopic"
+  ]
+ },
+ {
+  "id": "T07",
+  "type": "qa",
+  "prompt": "Which 10 top-level classes or interfaces in the org.apache.pulsar packages of modules pulsar-broker, pulsar-broker-common, pulsar-client-original, pulsar-client-api, pulsar-common, pulsar-metadata and managed-ledger (main code, no tests) are depended on by the most other distinct classes? Answer with the 10 fully qualified names, most depended-on first, one per line with the count, then stop. Do not modify any files.",
+  "expected": [
+   "org.apache.pulsar.broker.ServiceConfiguration",
+   "org.apache.pulsar.broker.PulsarService",
+   "org.apache.pulsar.common.util.FutureUtil",
+   "org.apache.pulsar.common.naming.TopicName",
+   "org.apache.pulsar.client.api.PulsarClientException",
+   "org.apache.pulsar.client.api.MessageId",
+   "org.apache.pulsar.broker.service.BrokerService",
+   "org.apache.pulsar.common.schema.SchemaType",
+   "org.apache.pulsar.common.naming.NamespaceName",
+   "org.apache.pulsar.common.schema.SchemaInfo"
+  ]
+ },
+ {
+  "id": "T03",
+  "type": "code",
+  "modules": "pulsar-common,pulsar-broker-common,pulsar-broker",
+  "prompt": "Add a new abstract method `String getName();` to the interface org.apache.pulsar.common.naming.NamespaceBundleSplitAlgorithm, and implement it in every implementing class anywhere in the repository (all modules, including anonymous classes, lambdas that would break, and inner classes) so that it returns a short lower-case name of the algorithm. Edit only files under src/main (all modules). Do not run Maven or any build; compilation is verified separately afterwards. When done, reply with a one-paragraph summary.",
+  "absent": []
+ },
+ {
+  "id": "T04",
+  "type": "code",
+  "modules": "pulsar-common,pulsar-broker-common,pulsar-broker",
+  "prompt": "Rename the method `getNamespaceObject()` of the class org.apache.pulsar.common.naming.NamespaceBundle to `getNamespaceName()` and update every caller in the whole repository. Do NOT rename the unrelated `getNamespaceObject()` methods of other classes (for example TopicName). Edit only files under src/main (all modules). Do not run Maven or any build; compilation is verified separately afterwards. When done, reply with a one-paragraph summary.",
+  "absent": [
+   "NamespaceBundle.java:getNamespaceObject"
+  ],
+  "present_other": "TopicName.java:getNamespaceObject"
+ },
+ {
+  "id": "T08",
+  "type": "code",
+  "modules": "pulsar-broker-common,pulsar-broker",
+  "prompt": "Add a new broker configuration option `maxConcurrentTopicLoadsPerNamespace` (int, default 100, category CATEGORY_POLICIES, with a @FieldContext doc comment) to org.apache.pulsar.broker.ServiceConfiguration and use it: wherever the broker currently limits concurrent topic loading with `maxConcurrentTopicLoadRequest`, find that place and log the new value together with the old at broker startup (do not change the existing limit behaviour). Also add the option with its default to conf/broker.conf. Edit only files under src/main (all modules). Do not run Maven or any build; compilation is verified separately afterwards. When done, reply with a one-paragraph summary.",
+  "absent": []
+ },
+ {
+  "id": "H1",
+  "type": "code",
+  "modules": "managed-ledger,pulsar-metadata,pulsar-common,pulsar-broker-common,pulsar-broker",
+  "prompt": "Rename the method `getLedgerId()` of the interface org.apache.bookkeeper.mledger.Position to `getLedger()`, including all implementations/overrides and every call site that invokes it on a Position (or a subtype of Position). Do NOT touch the many unrelated `getLedgerId()` methods of other types (for example MessageId, LedgerInfo, ManagedLedger, protobuf classes). Scope: src/main of the modules managed-ledger, pulsar-metadata, pulsar-common, pulsar-broker-common and pulsar-broker. Do not run Maven or any build; compilation is verified separately afterwards. When done, reply with a one-paragraph summary."
+ },
+ {
+  "id": "H2",
+  "type": "code",
+  "modules": "managed-ledger,pulsar-metadata,pulsar-common,pulsar-broker-common,pulsar-broker",
+  "prompt": "Rename the method `getName()` of the interface org.apache.pulsar.broker.service.Subscription to `getSubscriptionName()`, including all implementations/overrides and every call site that invokes it on a Subscription (or a subtype). Do NOT touch the many unrelated `getName()` methods of other types. Scope: src/main of the modules managed-ledger, pulsar-metadata, pulsar-common, pulsar-broker-common and pulsar-broker. Do not run Maven or any build; compilation is verified separately afterwards. When done, reply with a one-paragraph summary."
+ },
+ {
+  "id": "H3",
+  "type": "code",
+  "modules": "managed-ledger,pulsar-metadata,pulsar-common,pulsar-broker-common,pulsar-broker",
+  "prompt": "Rename the method `select(int)` of the interface org.apache.pulsar.broker.service.StickyKeyConsumerSelector to `selectConsumer(int)`, including all implementations/overrides and every call site that invokes it on a StickyKeyConsumerSelector (or a subtype). Do NOT touch unrelated `select` methods of other types. Scope: src/main of the modules managed-ledger, pulsar-metadata, pulsar-common, pulsar-broker-common and pulsar-broker. Do not run Maven or any build; compilation is verified separately afterwards. When done, reply with a one-paragraph summary."
+ }
+]

@@ -1,0 +1,76 @@
+diff --git a/pulsar-broker/src/main/java/org/apache/pulsar/common/naming/FlowOrQpsEquallyDivideBundleSplitAlgorithm.java b/pulsar-broker/src/main/java/org/apache/pulsar/common/naming/FlowOrQpsEquallyDivideBundleSplitAlgorithm.java
+index 56b988f..7fe238f 100644
+--- a/pulsar-broker/src/main/java/org/apache/pulsar/common/naming/FlowOrQpsEquallyDivideBundleSplitAlgorithm.java
++++ b/pulsar-broker/src/main/java/org/apache/pulsar/common/naming/FlowOrQpsEquallyDivideBundleSplitAlgorithm.java
+@@ -46,6 +46,11 @@ public class FlowOrQpsEquallyDivideBundleSplitAlgorithm implements NamespaceBund
+         }
+     }
+ 
++    @Override
++    public String getName() {
++        return "flow_or_qps";
++    }
++
+     @Override
+     public CompletableFuture<List<Long>> getSplitBoundary(BundleSplitOption bundleSplitOptionTmp) {
+         FlowOrQpsEquallyDivideBundleSplitOption bundleSplitOption =
+diff --git a/pulsar-broker/src/main/java/org/apache/pulsar/common/naming/NamespaceBundleSplitAlgorithm.java b/pulsar-broker/src/main/java/org/apache/pulsar/common/naming/NamespaceBundleSplitAlgorithm.java
+index 1fd6fbc..a5e9c4e 100644
+--- a/pulsar-broker/src/main/java/org/apache/pulsar/common/naming/NamespaceBundleSplitAlgorithm.java
++++ b/pulsar-broker/src/main/java/org/apache/pulsar/common/naming/NamespaceBundleSplitAlgorithm.java
+@@ -62,5 +62,7 @@ public interface NamespaceBundleSplitAlgorithm {
+         }
+     }
+ 
++    String getName();
++
+     CompletableFuture<List<Long>> getSplitBoundary(BundleSplitOption bundleSplitOption);
+ }
+diff --git a/pulsar-broker/src/main/java/org/apache/pulsar/common/naming/RangeEquallyDivideBundleSplitAlgorithm.java b/pulsar-broker/src/main/java/org/apache/pulsar/common/naming/RangeEquallyDivideBundleSplitAlgorithm.java
+index 5611dbf..c2f1585 100644
+--- a/pulsar-broker/src/main/java/org/apache/pulsar/common/naming/RangeEquallyDivideBundleSplitAlgorithm.java
++++ b/pulsar-broker/src/main/java/org/apache/pulsar/common/naming/RangeEquallyDivideBundleSplitAlgorithm.java
+@@ -27,6 +27,11 @@ import java.util.concurrent.CompletableFuture;
+  */
+ public class RangeEquallyDivideBundleSplitAlgorithm implements NamespaceBundleSplitAlgorithm {
+ 
++    @Override
++    public String getName() {
++        return "range_equally_divide";
++    }
++
+     @Override
+     public CompletableFuture<List<Long>> getSplitBoundary(BundleSplitOption bundleSplitOption) {
+         NamespaceBundle bundle = bundleSplitOption.getBundle();
+diff --git a/pulsar-broker/src/main/java/org/apache/pulsar/common/naming/SpecifiedPositionsBundleSplitAlgorithm.java b/pulsar-broker/src/main/java/org/apache/pulsar/common/naming/SpecifiedPositionsBundleSplitAlgorithm.java
+index 4a5f8a8..153a73a 100644
+--- a/pulsar-broker/src/main/java/org/apache/pulsar/common/naming/SpecifiedPositionsBundleSplitAlgorithm.java
++++ b/pulsar-broker/src/main/java/org/apache/pulsar/common/naming/SpecifiedPositionsBundleSplitAlgorithm.java
+@@ -39,6 +39,11 @@ public class SpecifiedPositionsBundleSplitAlgorithm implements NamespaceBundleSp
+     public SpecifiedPositionsBundleSplitAlgorithm(boolean force) {
+         this.force = force;
+     }
++    @Override
++    public String getName() {
++        return "specified_positions";
++    }
++
+     @Override
+     public CompletableFuture<List<Long>> getSplitBoundary(BundleSplitOption bundleSplitOption) {
+         NamespaceService service = bundleSplitOption.getService();
+diff --git a/pulsar-broker/src/main/java/org/apache/pulsar/common/naming/TopicCountEquallyDivideBundleSplitAlgorithm.java b/pulsar-broker/src/main/java/org/apache/pulsar/common/naming/TopicCountEquallyDivideBundleSplitAlgorithm.java
+index 0f4baf0..fea4e01 100644
+--- a/pulsar-broker/src/main/java/org/apache/pulsar/common/naming/TopicCountEquallyDivideBundleSplitAlgorithm.java
++++ b/pulsar-broker/src/main/java/org/apache/pulsar/common/naming/TopicCountEquallyDivideBundleSplitAlgorithm.java
+@@ -29,6 +29,11 @@ import org.apache.pulsar.broker.namespace.NamespaceService;
+  */
+ public class TopicCountEquallyDivideBundleSplitAlgorithm implements NamespaceBundleSplitAlgorithm  {
+ 
++    @Override
++    public String getName() {
++        return "topic_count";
++    }
++
+     @Override
+     public CompletableFuture<List<Long>> getSplitBoundary(BundleSplitOption bundleSplitOption) {
+         NamespaceService service = bundleSplitOption.getService();

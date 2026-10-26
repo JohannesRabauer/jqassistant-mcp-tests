@@ -1,0 +1,44 @@
+diff --git a/conf/broker.conf b/conf/broker.conf
+index cd42d55..80416ea 100644
+--- a/conf/broker.conf
++++ b/conf/broker.conf
+@@ -590,6 +590,9 @@ maxTopicListInFlightDirectMemSizePermitsAcquireQueueSize=10000
+ # Max number of concurrent topic loading request broker allows to control number of zk-operations
+ maxConcurrentTopicLoadRequest=5000
+ 
++# Max number of concurrent topic loading requests allowed per namespace
++maxConcurrentTopicLoadsPerNamespace=100
++
+ # Max concurrent non-persistent message can be processed per connection
+ maxConcurrentNonPersistentMessagePerConnection=1000
+ 
+diff --git a/pulsar-broker-common/src/main/java/org/apache/pulsar/broker/ServiceConfiguration.java b/pulsar-broker-common/src/main/java/org/apache/pulsar/broker/ServiceConfiguration.java
+index e2caa61..f6c73b3 100644
+--- a/pulsar-broker-common/src/main/java/org/apache/pulsar/broker/ServiceConfiguration.java
++++ b/pulsar-broker-common/src/main/java/org/apache/pulsar/broker/ServiceConfiguration.java
+@@ -1493,6 +1493,11 @@ public class ServiceConfiguration implements PulsarConfiguration {
+         doc = "Max number of concurrent topic loading request broker allows to control number of zk-operations"
+     )
+     private int maxConcurrentTopicLoadRequest = 5000;
++    @FieldContext(
++        category = CATEGORY_POLICIES,
++        doc = "Max number of concurrent topic loading requests allowed per namespace"
++    )
++    private int maxConcurrentTopicLoadsPerNamespace = 100;
+     @FieldContext(
+         category = CATEGORY_SERVER,
+         doc = "Max concurrent non-persistent message can be processed per connection")
+diff --git a/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/BrokerService.java b/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/BrokerService.java
+index f7ba853..66e038b 100644
+--- a/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/BrokerService.java
++++ b/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/BrokerService.java
+@@ -418,6 +418,9 @@ public class BrokerService implements Closeable {
+                 pulsar.getConfiguration().getMaxTopicListInFlightDirectMemSizePermitsAcquireTimeoutMillis());
+         this.topicLoadRequestSemaphore = new AtomicReference<>(
+                 new Semaphore(pulsar.getConfiguration().getMaxConcurrentTopicLoadRequest(), false));
++        log.info("Topic load limits: maxConcurrentTopicLoadRequest={}, maxConcurrentTopicLoadsPerNamespace={}",
++                pulsar.getConfiguration().getMaxConcurrentTopicLoadRequest(),
++                pulsar.getConfiguration().getMaxConcurrentTopicLoadsPerNamespace());
+         if (pulsar.getConfiguration().getMaxUnackedMessagesPerBroker() > 0
+                 && pulsar.getConfiguration().getMaxUnackedMessagesPerSubscriptionOnBrokerBlocked() > 0.0) {
+             this.maxUnackedMessages = pulsar.getConfiguration().getMaxUnackedMessagesPerBroker();

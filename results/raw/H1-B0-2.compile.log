@@ -1,0 +1,24 @@
+[ERROR] COMPILATION ERROR : 
+[ERROR] /src/managed-ledger/src/main/java/org/apache/bookkeeper/mledger/impl/ManagedLedgerImpl.java:[3438,56] cannot find symbol
+  symbol:   method getLedger()
+  location: variable ls of type org.apache.bookkeeper.mledger.proto.ManagedLedgerInfo.LedgerInfo
+[ERROR] /src/managed-ledger/src/main/java/org/apache/bookkeeper/mledger/impl/ManagedLedgerImpl.java:[3858,54] cannot find symbol
+  symbol:   method getLedger()
+  location: variable ls of type org.apache.bookkeeper.mledger.proto.ManagedLedgerInfo.LedgerInfo
+[ERROR] Failed to execute goal org.apache.maven.plugins:maven-compiler-plugin:3.11.0:compile (default-compile) on project managed-ledger: Compilation failure: Compilation failure: 
+[ERROR] /src/managed-ledger/src/main/java/org/apache/bookkeeper/mledger/impl/ManagedLedgerImpl.java:[3438,56] cannot find symbol
+[ERROR]   symbol:   method getLedger()
+[ERROR]   location: variable ls of type org.apache.bookkeeper.mledger.proto.ManagedLedgerInfo.LedgerInfo
+[ERROR] /src/managed-ledger/src/main/java/org/apache/bookkeeper/mledger/impl/ManagedLedgerImpl.java:[3858,54] cannot find symbol
+[ERROR]   symbol:   method getLedger()
+[ERROR]   location: variable ls of type org.apache.bookkeeper.mledger.proto.ManagedLedgerInfo.LedgerInfo
+[ERROR] -> [Help 1]
+[ERROR] 
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException
+[ERROR] 
+[ERROR] After correcting the problems, you can resume the build with the command
+[ERROR]   mvn <args> -rf :managed-ledger

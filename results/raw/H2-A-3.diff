@@ -1,0 +1,327 @@
+diff --git a/pulsar-broker/src/main/java/org/apache/pulsar/broker/delayed/BucketDelayedDeliveryTrackerFactory.java b/pulsar-broker/src/main/java/org/apache/pulsar/broker/delayed/BucketDelayedDeliveryTrackerFactory.java
+index 93eb3eb..6edb526 100644
+--- a/pulsar-broker/src/main/java/org/apache/pulsar/broker/delayed/BucketDelayedDeliveryTrackerFactory.java
++++ b/pulsar-broker/src/main/java/org/apache/pulsar/broker/delayed/BucketDelayedDeliveryTrackerFactory.java
+@@ -80,7 +80,7 @@ public class BucketDelayedDeliveryTrackerFactory implements DelayedDeliveryTrack
+     @Override
+     public DelayedDeliveryTracker newTracker(AbstractPersistentDispatcherMultipleConsumers dispatcher) {
+         String topicName = dispatcher.getTopic().getName();
+-        String subscriptionName = dispatcher.getSubscription().getName();
++        String subscriptionName = dispatcher.getSubscription().getSubscriptionName();
+         BrokerService brokerService = dispatcher.getTopic().getBrokerService();
+         DelayedDeliveryTracker tracker;
+ 
+diff --git a/pulsar-broker/src/main/java/org/apache/pulsar/broker/delayed/InMemoryDelayedDeliveryTrackerFactory.java b/pulsar-broker/src/main/java/org/apache/pulsar/broker/delayed/InMemoryDelayedDeliveryTrackerFactory.java
+index f8b8f5a..20403c0 100644
+--- a/pulsar-broker/src/main/java/org/apache/pulsar/broker/delayed/InMemoryDelayedDeliveryTrackerFactory.java
++++ b/pulsar-broker/src/main/java/org/apache/pulsar/broker/delayed/InMemoryDelayedDeliveryTrackerFactory.java
+@@ -53,7 +53,7 @@ public class InMemoryDelayedDeliveryTrackerFactory implements DelayedDeliveryTra
+     @Override
+     public DelayedDeliveryTracker newTracker(AbstractPersistentDispatcherMultipleConsumers dispatcher) {
+         String topicName = dispatcher.getTopic().getName();
+-        String subscriptionName = dispatcher.getSubscription().getName();
++        String subscriptionName = dispatcher.getSubscription().getSubscriptionName();
+         DelayedDeliveryTracker tracker =  DelayedDeliveryTracker.DISABLE;
+         try {
+             tracker = newTracker0(dispatcher);
+diff --git a/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/AbstractBaseDispatcher.java b/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/AbstractBaseDispatcher.java
+index c4d99f1..d90c4e4 100644
+--- a/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/AbstractBaseDispatcher.java
++++ b/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/AbstractBaseDispatcher.java
+@@ -471,7 +471,7 @@ public abstract class AbstractBaseDispatcher extends EntryFilterSupport implemen
+     }
+ 
+     protected String getSubscriptionName() {
+-        return subscription == null ? null : subscription.getName();
++        return subscription == null ? null : subscription.getSubscriptionName();
+     }
+ 
+     protected void checkAndApplyReachedEndOfTopicOrTopicMigration(List<Consumer> consumers) {
+diff --git a/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/Consumer.java b/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/Consumer.java
+index e76139f..dd92a87 100644
+--- a/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/Consumer.java
++++ b/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/Consumer.java
+@@ -314,7 +314,7 @@ public class Consumer {
+     void notifyActiveConsumerChange(Consumer activeConsumer) {
+         if (log.isDebugEnabled()) {
+             log.debug("notify consumer {} - that [{}] for subscription {} has new active consumer : {}",
+-                consumerId, topicName, subscription.getName(), activeConsumer);
++                consumerId, topicName, subscription.getSubscriptionName(), activeConsumer);
+         }
+         cnx.getCommandSender().sendActiveConsumerChange(consumerId, this == activeConsumer);
+     }
+@@ -1090,7 +1090,7 @@ public class Consumer {
+         TopicName topicName = TopicName.get(subscription.getTopicName());
+         if (cnx.getBrokerService().getAuthorizationService() != null) {
+             AuthenticationDataSubscription authData =
+-                    new AuthenticationDataSubscription(cnx.getAuthenticationData(), subscription.getName());
++                    new AuthenticationDataSubscription(cnx.getAuthenticationData(), subscription.getSubscriptionName());
+             return cnx.getBrokerService().getAuthorizationService()
+                     .allowTopicOperationAsync(topicName, TopicOperation.CONSUME, appId, authData)
+                     .handle((ok, e) -> {
+@@ -1366,7 +1366,7 @@ public class Consumer {
+             var builder = Attributes.builder()
+                     .put(OpenTelemetryAttributes.PULSAR_CONSUMER_NAME, consumerName)
+                     .put(OpenTelemetryAttributes.PULSAR_CONSUMER_ID, consumerId)
+-                    .put(OpenTelemetryAttributes.PULSAR_SUBSCRIPTION_NAME, subscription.getName())
++                    .put(OpenTelemetryAttributes.PULSAR_SUBSCRIPTION_NAME, subscription.getSubscriptionName())
+                     .put(OpenTelemetryAttributes.PULSAR_SUBSCRIPTION_TYPE, subType.toString())
+                     .put(OpenTelemetryAttributes.PULSAR_DOMAIN, topicName.getDomain().toString())
+                     .put(OpenTelemetryAttributes.PULSAR_TENANT, topicName.getTenant())
+diff --git a/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/ServerCnx.java b/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/ServerCnx.java
+index 0550c47..ee44f1b 100644
+--- a/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/ServerCnx.java
++++ b/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/ServerCnx.java
+@@ -2298,7 +2298,7 @@ public class ServerCnx extends PulsarHandler implements TransportCnx {
+ 
+             subscription.resetCursor(position).thenRun(() -> {
+                 log.info("[{}] [{}][{}] Reset subscription to message id {}", remoteAddress,
+-                        subscription.getTopic().getName(), subscription.getName(), position);
++                        subscription.getTopic().getName(), subscription.getSubscriptionName(), position);
+                 commandSender.sendSuccessResponse(requestId);
+             }).exceptionally(ex -> {
+                 log.warn("[{}][{}] Failed to reset subscription: {}",
+@@ -2314,7 +2314,7 @@ public class ServerCnx extends PulsarHandler implements TransportCnx {
+ 
+             subscription.resetCursor(timestamp).thenRun(() -> {
+                 log.info("[{}] [{}][{}] Reset subscription to publish time {}", remoteAddress,
+-                        subscription.getTopic().getName(), subscription.getName(), timestamp);
++                        subscription.getTopic().getName(), subscription.getSubscriptionName(), timestamp);
+                 commandSender.sendSuccessResponse(requestId);
+             }).exceptionally(ex -> {
+                 log.warn("[{}][{}] Failed to reset subscription: {}", remoteAddress,
+@@ -2470,7 +2470,7 @@ public class ServerCnx extends PulsarHandler implements TransportCnx {
+                              markDeletePosition,
+                              partitionIndex,
+                              requestId,
+-                             consumer.getSubscription().getName(),
++                             consumer.getSubscription().getSubscriptionName(),
+                              consumer.readCompacted());
+                     return null;
+                  }).exceptionally(e -> {
+diff --git a/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/SharedConsumerAssignor.java b/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/SharedConsumerAssignor.java
+index a317ad7..69dd328 100644
+--- a/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/SharedConsumerAssignor.java
++++ b/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/SharedConsumerAssignor.java
+@@ -64,7 +64,7 @@ public class SharedConsumerAssignor {
+         if (consumer == null) {
+             if (subscription != null) {
+                 log.info("No consumer found to assign in topic:{}, subscription:{}, redelivering {} messages.",
+-                        subscription.getTopic().getName(), subscription.getName(), entryAndMetadataList.size());
++                        subscription.getTopic().getName(), subscription.getSubscriptionName(), entryAndMetadataList.size());
+             }
+             entryAndMetadataList.forEach(unassignedMessageProcessor);
+             return consumerToEntries;
+diff --git a/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/Subscription.java b/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/Subscription.java
+index 452c30b..4dd71c4 100644
+--- a/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/Subscription.java
++++ b/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/Subscription.java
+@@ -36,7 +36,7 @@ public interface Subscription extends MessageExpirer {
+ 
+     Topic getTopic();
+ 
+-    String getName();
++    String getSubscriptionName();
+ 
+     CompletableFuture<Void> addConsumer(Consumer consumer);
+ 
+diff --git a/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/nonpersistent/NonPersistentDispatcherMultipleConsumers.java b/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/nonpersistent/NonPersistentDispatcherMultipleConsumers.java
+index 93446e8..f5d1548 100644
+--- a/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/nonpersistent/NonPersistentDispatcherMultipleConsumers.java
++++ b/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/nonpersistent/NonPersistentDispatcherMultipleConsumers.java
+@@ -66,7 +66,7 @@ public class NonPersistentDispatcherMultipleConsumers extends AbstractDispatcher
+         super(subscription, topic.getBrokerService().pulsar().getConfiguration());
+         this.topic = topic;
+         this.subscription = subscription;
+-        this.name = topic.getName() + " / " + subscription.getName();
++        this.name = topic.getName() + " / " + subscription.getSubscriptionName();
+         this.msgDrop = new Rate();
+         this.redeliveryTracker = RedeliveryTrackerDisabled.REDELIVERY_TRACKER_DISABLED;
+     }
+diff --git a/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/nonpersistent/NonPersistentDispatcherSingleActiveConsumer.java b/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/nonpersistent/NonPersistentDispatcherSingleActiveConsumer.java
+index a8d9790..64d3b9b 100644
+--- a/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/nonpersistent/NonPersistentDispatcherSingleActiveConsumer.java
++++ b/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/nonpersistent/NonPersistentDispatcherSingleActiveConsumer.java
+@@ -49,7 +49,7 @@ public final class NonPersistentDispatcherSingleActiveConsumer extends AbstractD
+                 topic.getBrokerService().pulsar().getConfiguration(), null);
+         this.topic = topic;
+         this.subscription = subscription;
+-        this.name = topic.getName() + " / " + subscription.getName();
++        this.name = topic.getName() + " / " + subscription.getSubscriptionName();
+         this.msgDrop = new Rate();
+         this.redeliveryTracker = RedeliveryTrackerDisabled.REDELIVERY_TRACKER_DISABLED;
+     }
+diff --git a/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/nonpersistent/NonPersistentSubscription.java b/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/nonpersistent/NonPersistentSubscription.java
+index 549a17b..c6ea859 100644
+--- a/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/nonpersistent/NonPersistentSubscription.java
++++ b/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/nonpersistent/NonPersistentSubscription.java
+@@ -86,7 +86,7 @@ public class NonPersistentSubscription extends AbstractSubscription {
+     }
+ 
+     @Override
+-    public String getName() {
++    public String getSubscriptionName() {
+         return this.subName;
+     }
+ 
+diff --git a/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/persistent/PersistentSubscription.java b/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/persistent/PersistentSubscription.java
+index 1c24f68..8fec21d 100644
+--- a/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/persistent/PersistentSubscription.java
++++ b/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/persistent/PersistentSubscription.java
+@@ -193,7 +193,7 @@ public class PersistentSubscription extends AbstractSubscription {
+     }
+ 
+     @Override
+-    public String getName() {
++    public String getSubscriptionName() {
+         return this.subName;
+     }
+ 
+diff --git a/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/persistent/PersistentTopic.java b/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/persistent/PersistentTopic.java
+index f7c8a30..d19d51a 100644
+--- a/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/persistent/PersistentTopic.java
++++ b/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/persistent/PersistentTopic.java
+@@ -586,7 +586,7 @@ public class PersistentTopic extends AbstractTopic implements Topic, AddEntryCal
+             return CompletableFuture.failedFuture(
+                     new SubscriptionNotFoundException(String.format("Subscription %s not found", subName)));
+         }
+-        if (Compactor.COMPACTION_SUBSCRIPTION.equals(sub.getName())){
++        if (Compactor.COMPACTION_SUBSCRIPTION.equals(sub.getSubscriptionName())){
+             return CompletableFuture.failedFuture(
+                     new UnsupportedSubscriptionException(String.format("Unsupported subscription: %s", subName)));
+         }
+@@ -608,7 +608,7 @@ public class PersistentTopic extends AbstractTopic implements Topic, AddEntryCal
+                             "Another unload subscriber[%s] has been finished, do not repeat call.", subName)));
+                 }
+                 sub.getCursor().rewind();
+-                PersistentSubscription subNew = PersistentTopic.this.createPersistentSubscription(sub.getName(),
++                PersistentSubscription subNew = PersistentTopic.this.createPersistentSubscription(sub.getSubscriptionName(),
+                         sub.getCursor(), sub.isReplicated(), sub.getSubscriptionProperties());
+                 subscriptions.put(subName, subNew);
+                 return CompletableFuture.completedFuture(null);
+@@ -1268,7 +1268,7 @@ public class PersistentTopic extends AbstractTopic implements Topic, AddEntryCal
+         subscription.resetCursor(timestamp).handle((s, ex) -> {
+             if (ex != null) {
+                 log.warn("[{}] Failed to reset cursor {} position at timestamp {}, caused by {}", topic,
+-                        subscription.getName(), startMessageRollbackDurationSec, ex.getMessage());
++                        subscription.getSubscriptionName(), startMessageRollbackDurationSec, ex.getMessage());
+             }
+             subscriptionFuture.complete(finalSubscription);
+             return null;
+@@ -1390,7 +1390,7 @@ public class PersistentTopic extends AbstractTopic implements Topic, AddEntryCal
+ 
+     private void asyncDeleteCursorWithCleanCompactionLedger(PersistentSubscription subscription,
+                                                             CompletableFuture<Void> unsubscribeFuture) {
+-        final String subscriptionName = subscription.getName();
++        final String subscriptionName = subscription.getSubscriptionName();
+         if ((!isCompactionSubscription(subscriptionName)) || !(subscription instanceof PulsarCompactorSubscription)) {
+             asyncDeleteCursor(subscriptionName, unsubscribeFuture);
+             return;
+@@ -1562,7 +1562,7 @@ public class PersistentTopic extends AbstractTopic implements Topic, AddEntryCal
+                         List<String> backlogSubs =
+                                 subscriptions.values().stream()
+                                         .filter(sub -> sub.getNumberOfEntriesInBacklog(false) > 0)
+-                                        .map(PersistentSubscription::getName).toList();
++                                        .map(PersistentSubscription::getSubscriptionName).toList();
+                         return FutureUtil.failedFuture(
+                                 new TopicBusyException("Topic has subscriptions did not catch up: " + backlogSubs));
+                     } else if (!producers.isEmpty()) {
+@@ -2335,9 +2335,9 @@ public class PersistentTopic extends AbstractTopic implements Topic, AddEntryCal
+     private void checkMessageExpiryWithoutSharedPosition(int messageTtlInSeconds) {
+         subscriptions.forEach((__, sub) -> {
+             // TTL must not advance non-durable reader cursors past unread retained messages.
+-            if (sub.getCursor().isDurable() && !isCompactionSubscription(sub.getName())
++            if (sub.getCursor().isDurable() && !isCompactionSubscription(sub.getSubscriptionName())
+                     && (additionalSystemCursorNames.isEmpty()
+-                    || !additionalSystemCursorNames.contains(sub.getName()))) {
++                    || !additionalSystemCursorNames.contains(sub.getSubscriptionName()))) {
+                 sub.expireMessagesAsync(messageTtlInSeconds);
+             }
+         });
+@@ -2382,9 +2382,9 @@ public class PersistentTopic extends AbstractTopic implements Topic, AddEntryCal
+             }
+             // Expire durable subscriptions by position. Non-durable readers must retain their read position.
+             subscriptions.forEach((__, sub) -> {
+-                if (sub.getCursor().isDurable() && !isCompactionSubscription(sub.getName())
++                if (sub.getCursor().isDurable() && !isCompactionSubscription(sub.getSubscriptionName())
+                         && (additionalSystemCursorNames.isEmpty()
+-                        || !additionalSystemCursorNames.contains(sub.getName()))) {
++                        || !additionalSystemCursorNames.contains(sub.getSubscriptionName()))) {
+                     // The variable "position" is to mark delete position.
+                     // Regarding the method "expireMessages(position)", it will mark delete the target position if the
+                     // position is valid, otherwise, it mark deletes the previous valid position.
+diff --git a/pulsar-broker/src/main/java/org/apache/pulsar/broker/stats/prometheus/TransactionAggregator.java b/pulsar-broker/src/main/java/org/apache/pulsar/broker/stats/prometheus/TransactionAggregator.java
+index df2638b..476a99e 100644
+--- a/pulsar-broker/src/main/java/org/apache/pulsar/broker/stats/prometheus/TransactionAggregator.java
++++ b/pulsar-broker/src/main/java/org/apache/pulsar/broker/stats/prometheus/TransactionAggregator.java
+@@ -68,7 +68,7 @@ public class TransactionAggregator {
+                                         ManagedLedger managedLedger = ((PersistentSubscription) subscription)
+                                                 .getPendingAckManageLedger().get();
+                                         generateManageLedgerStats(managedLedger,
+-                                                stream, cluster, namespace, name, subscription.getName());
++                                                stream, cluster, namespace, name, subscription.getSubscriptionName());
+                                     }
+                                 } catch (Exception e) {
+                                     log.warn("Transaction pending ack generate managedLedgerStats fail!", e);
+diff --git a/pulsar-broker/src/main/java/org/apache/pulsar/broker/transaction/pendingack/impl/MLPendingAckStoreProvider.java b/pulsar-broker/src/main/java/org/apache/pulsar/broker/transaction/pendingack/impl/MLPendingAckStoreProvider.java
+index 8c55fe6..6f73f32 100644
+--- a/pulsar-broker/src/main/java/org/apache/pulsar/broker/transaction/pendingack/impl/MLPendingAckStoreProvider.java
++++ b/pulsar-broker/src/main/java/org/apache/pulsar/broker/transaction/pendingack/impl/MLPendingAckStoreProvider.java
+@@ -105,7 +105,7 @@ public class MLPendingAckStoreProvider implements TransactionPendingAckStoreProv
+         );
+ 
+         String pendingAckTopicName = MLPendingAckStore
+-                .getTransactionPendingAckStoreSuffix(originPersistentTopic.getName(), subscription.getName());
++                .getTransactionPendingAckStoreSuffix(originPersistentTopic.getName(), subscription.getSubscriptionName());
+         TopicName pendingAckTopicNameObject = TopicName.get(pendingAckTopicName);
+         brokerService.getManagedLedgerFactoryForTopic(pendingAckTopicNameObject)
+                 .thenAccept(managedLedgerFactory -> {
+@@ -190,7 +190,7 @@ public class MLPendingAckStoreProvider implements TransactionPendingAckStoreProv
+                                                             "{},{} open MLPendingAckStore cursor "
+                                                                     + "success",
+                                                             originPersistentTopic.getName(),
+-                                                            subscription.getName());
++                                                            subscription.getSubscriptionName());
+                                                 }
+                                             }
+ 
+@@ -202,7 +202,7 @@ public class MLPendingAckStoreProvider implements TransactionPendingAckStoreProv
+                                                         "{},{} open MLPendingAckStore cursor "
+                                                                 + "failed."
+                                                         , originPersistentTopic.getName(),
+-                                                        subscription.getName(), exception);
++                                                        subscription.getSubscriptionName(), exception);
+                                                 pendingAckStoreFuture.completeExceptionally(
+                                                         exception);
+                                             }
+@@ -213,7 +213,7 @@ public class MLPendingAckStoreProvider implements TransactionPendingAckStoreProv
+                             public void openLedgerFailed(ManagedLedgerException exception,
+                                                          Object ctx) {
+                                 log.error("{}, {} open MLPendingAckStore managedLedger failed."
+-                                        , originPersistentTopic.getName(), subscription.getName(),
++                                        , originPersistentTopic.getName(), subscription.getSubscriptionName(),
+                                         exception);
+                                 pendingAckStoreFuture.completeExceptionally(exception);
+                             }
+@@ -224,7 +224,7 @@ public class MLPendingAckStoreProvider implements TransactionPendingAckStoreProv
+     public CompletableFuture<Boolean> checkInitializedBefore(PersistentSubscription subscription) {
+         PersistentTopic originPersistentTopic = (PersistentTopic) subscription.getTopic();
+         String pendingAckTopicName = MLPendingAckStore
+-                .getTransactionPendingAckStoreSuffix(originPersistentTopic.getName(), subscription.getName());
++                .getTransactionPendingAckStoreSuffix(originPersistentTopic.getName(), subscription.getSubscriptionName());
+         TopicName topicName = TopicName.get(pendingAckTopicName);
+         return originPersistentTopic.getBrokerService().getManagedLedgerFactoryForTopic(topicName)
+                 .thenCompose(managedLedgerFactory -> managedLedgerFactory.asyncExists(
+diff --git a/pulsar-broker/src/main/java/org/apache/pulsar/broker/transaction/pendingack/impl/PendingAckHandleImpl.java b/pulsar-broker/src/main/java/org/apache/pulsar/broker/transaction/pendingack/impl/PendingAckHandleImpl.java
+index bc85802..4fdca21 100644
+--- a/pulsar-broker/src/main/java/org/apache/pulsar/broker/transaction/pendingack/impl/PendingAckHandleImpl.java
++++ b/pulsar-broker/src/main/java/org/apache/pulsar/broker/transaction/pendingack/impl/PendingAckHandleImpl.java
+@@ -155,7 +155,7 @@ public class PendingAckHandleImpl extends PendingAckHandleState implements Pendi
+     public PendingAckHandleImpl(PersistentSubscription persistentSubscription) {
+         super(State.None);
+         this.topicName = persistentSubscription.getTopicName();
+-        this.subName = persistentSubscription.getName();
++        this.subName = persistentSubscription.getSubscriptionName();
+         this.persistentSubscription = persistentSubscription;
+         var pulsar = persistentSubscription.getTopic().getBrokerService().getPulsar();
+         internalPinnedExecutor = pulsar.getTransactionExecutorProvider().getExecutor(this);

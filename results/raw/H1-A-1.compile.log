@@ -1,0 +1,40 @@
+[ERROR] /src/managed-ledger/src/main/java/org/apache/bookkeeper/mledger/impl/ManagedCursorImpl.java:[785,99] cannot find symbol
+[ERROR]   symbol:   method getLedger()
+[ERROR]   location: variable lowerEndpoint of type org.apache.bookkeeper.mledger.proto.NestedPositionInfo
+[ERROR] /src/managed-ledger/src/main/java/org/apache/bookkeeper/mledger/impl/ManagedCursorImpl.java:[787,78] cannot find symbol
+[ERROR]   symbol:   method getLedger()
+[ERROR]   location: variable lowerEndpoint of type org.apache.bookkeeper.mledger.proto.NestedPositionInfo
+[ERROR] /src/managed-ledger/src/main/java/org/apache/bookkeeper/mledger/impl/ManagedCursorImpl.java:[788,46] cannot find symbol
+[ERROR]   symbol:   method getLedger()
+[ERROR]   location: variable lowerEndpoint of type org.apache.bookkeeper.mledger.proto.NestedPositionInfo
+[ERROR] /src/managed-ledger/src/main/java/org/apache/bookkeeper/mledger/impl/ManagedCursorImpl.java:[791,46] cannot find symbol
+[ERROR]   symbol:   method getLedger()
+[ERROR]   location: variable lowerEndpoint of type org.apache.bookkeeper.mledger.proto.NestedPositionInfo
+[ERROR] /src/managed-ledger/src/main/java/org/apache/bookkeeper/mledger/impl/ManagedCursorImpl.java:[795,50] cannot find symbol
+[ERROR]   symbol:   method getLedger()
+[ERROR]   location: variable lowerEndpoint of type org.apache.bookkeeper.mledger.proto.NestedPositionInfo
+[ERROR] /src/managed-ledger/src/main/java/org/apache/bookkeeper/mledger/impl/ManagedCursorImpl.java:[795,84] cannot find symbol
+[ERROR]   symbol:   method getLedger()
+[ERROR]   location: variable upperEndpoint of type org.apache.bookkeeper.mledger.proto.NestedPositionInfo
+[ERROR] /src/managed-ledger/src/main/java/org/apache/bookkeeper/mledger/impl/ManagedCursorImpl.java:[800,74] cannot find symbol
+[ERROR]   symbol:   method getLedger()
+[ERROR]   location: variable upperEndpoint of type org.apache.bookkeeper.mledger.proto.NestedPositionInfo
+[ERROR] /src/managed-ledger/src/main/java/org/apache/bookkeeper/mledger/impl/ManagedCursorImpl.java:[801,42] cannot find symbol
+[ERROR]   symbol:   method getLedger()
+[ERROR]   location: variable upperEndpoint of type org.apache.bookkeeper.mledger.proto.NestedPositionInfo
+[ERROR] /src/managed-ledger/src/main/java/org/apache/bookkeeper/mledger/impl/ShadowManagedLedgerImpl.java:[105,70] cannot find symbol
+[ERROR]   symbol:   method getLedger()
+[ERROR]   location: variable terminatedPosition of type org.apache.bookkeeper.mledger.proto.NestedPositionInfo
+[ERROR] /src/managed-ledger/src/main/java/org/apache/bookkeeper/mledger/impl/ShadowManagedLedgerImpl.java:[297,62] cannot find symbol
+[ERROR]   symbol:   method getLedger()
+[ERROR]   location: variable terminatedPosition of type org.apache.bookkeeper.mledger.proto.NestedPositionInfo
+[ERROR] -> [Help 1]
+[ERROR] 
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException
+[ERROR] 
+[ERROR] After correcting the problems, you can resume the build with the command
+[ERROR]   mvn <args> -rf :managed-ledger

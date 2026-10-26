@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 380" font-family="system-ui,Segoe UI,sans-serif">
+<title>Blind judge score</title><rect width="760" height="380" fill="#fcfcfb" rx="8"/>
+<text x="52" y="26" font-size="16" font-weight="600" fill="#0b0b0b">Blind judge score</text>
+<text x="52" y="45" font-size="12" fill="#52514e">Mean of up to 3 runs, scale 0 to 10. Higher is better.</text>
+<rect x="52" y="54" width="10" height="10" rx="2" fill="#2a78d6"/><text x="67" y="63" font-size="12" fill="#52514e">A grep only</text>
+<rect x="202" y="54" width="10" height="10" rx="2" fill="#eb6834"/><text x="217" y="63" font-size="12" fill="#52514e">B graph + hint</text>
+<rect x="352" y="54" width="10" height="10" rx="2" fill="#1baf7a"/><text x="367" y="63" font-size="12" fill="#52514e">B0 graph, no hint</text>
+<line x1="52" x2="744" y1="336.0" y2="336.0" stroke="#e6e5e0"/><text x="44" y="340.0" text-anchor="end" font-size="11" fill="#52514e">0.0</text>
+<line x1="52" x2="744" y1="290.2" y2="290.2" stroke="#e6e5e0"/><text x="44" y="294.2" text-anchor="end" font-size="11" fill="#52514e">2.0</text>
+<line x1="52" x2="744" y1="244.4" y2="244.4" stroke="#e6e5e0"/><text x="44" y="248.4" text-anchor="end" font-size="11" fill="#52514e">4.0</text>
+<line x1="52" x2="744" y1="198.5" y2="198.5" stroke="#e6e5e0"/><text x="44" y="202.5" text-anchor="end" font-size="11" fill="#52514e">6.0</text>
+<line x1="52" x2="744" y1="152.7" y2="152.7" stroke="#e6e5e0"/><text x="44" y="156.7" text-anchor="end" font-size="11" fill="#52514e">8.0</text>
+<line x1="52" x2="744" y1="106.9" y2="106.9" stroke="#e6e5e0"/><text x="44" y="110.9" text-anchor="end" font-size="11" fill="#52514e">10.0</text>
+<text x="109.7" y="362" text-anchor="middle" font-size="12" fill="#52514e">T03</text>
+<path d="M62.4 336.0V141.5Q62.4 137.5 66.4 137.5H87.2Q91.2 137.5 91.2 141.5V336.0Z" fill="#2a78d6"><title>T03 A grep only: 8.7</title></path>
+<text x="76.8" y="132.5" text-anchor="middle" font-size="10" fill="#0b0b0b">8.7</text>
+<path d="M95.2 336.0V141.5Q95.2 137.5 99.2 137.5H120.1Q124.1 137.5 124.1 141.5V336.0Z" fill="#eb6834"><title>T03 B graph + hint: 8.7</title></path>
+<text x="109.7" y="132.5" text-anchor="middle" font-size="10" fill="#0b0b0b">8.7</text>
+<path d="M128.1 336.0V141.5Q128.1 137.5 132.1 137.5H152.9Q156.9 137.5 156.9 141.5V336.0Z" fill="#1baf7a"><title>T03 B0 graph, no hint: 8.7</title></path>
+<text x="142.5" y="132.5" text-anchor="middle" font-size="10" fill="#0b0b0b">8.7</text>
+<text x="225.0" y="362" text-anchor="middle" font-size="12" fill="#52514e">T04</text>
+<path d="M177.7 336.0V194.9Q177.7 190.9 181.7 190.9H202.6Q206.6 190.9 206.6 194.9V336.0Z" fill="#2a78d6"><title>T04 A grep only: 6.3</title></path>
+<text x="192.2" y="185.9" text-anchor="middle" font-size="10" fill="#0b0b0b">6.3</text>
+<path d="M210.6 336.0V202.5Q210.6 198.5 214.6 198.5H235.4Q239.4 198.5 239.4 202.5V336.0Z" fill="#eb6834"><title>T04 B graph + hint: 6.0</title></path>
+<text x="225.0" y="193.5" text-anchor="middle" font-size="10" fill="#0b0b0b">6.0</text>
+<path d="M243.4 336.0V225.5Q243.4 221.5 247.4 221.5H268.2Q272.2 221.5 272.2 225.5V336.0Z" fill="#1baf7a"><title>T04 B0 graph, no hint: 5.0</title></path>
+<text x="257.8" y="216.5" text-anchor="middle" font-size="10" fill="#0b0b0b">5.0</text>
+<text x="340.3" y="362" text-anchor="middle" font-size="12" fill="#52514e">T08</text>
+<path d="M293.1 336.0V172.0Q293.1 168.0 297.1 168.0H317.9Q321.9 168.0 321.9 172.0V336.0Z" fill="#2a78d6"><title>T08 A grep only: 7.3</title></path>
+<text x="307.5" y="163.0" text-anchor="middle" font-size="10" fill="#0b0b0b">7.3</text>
+<path d="M325.9 336.0V156.7Q325.9 152.7 329.9 152.7H350.7Q354.7 152.7 354.7 156.7V336.0Z" fill="#eb6834"><title>T08 B graph + hint: 8.0</title></path>
+<text x="340.3" y="147.7" text-anchor="middle" font-size="10" fill="#0b0b0b">8.0</text>
+<path d="M358.7 336.0V156.7Q358.7 152.7 362.7 152.7H383.6Q387.6 152.7 387.6 156.7V336.0Z" fill="#1baf7a"><title>T08 B0 graph, no hint: 8.0</title></path>
+<text x="373.2" y="147.7" text-anchor="middle" font-size="10" fill="#0b0b0b">8.0</text>
+<text x="455.7" y="362" text-anchor="middle" font-size="12" fill="#52514e">H1</text>
+<path d="M408.4 336.0V278.9Q408.4 274.9 412.4 274.9H433.2Q437.2 274.9 437.2 278.9V336.0Z" fill="#2a78d6"><title>H1 A grep only: 2.7</title></path>
+<text x="422.8" y="269.9" text-anchor="middle" font-size="10" fill="#0b0b0b">2.7</text>
+<path d="M441.2 336.0V271.3Q441.2 267.3 445.2 267.3H466.1Q470.1 267.3 470.1 271.3V336.0Z" fill="#eb6834"><title>H1 B graph + hint: 3.0</title></path>
+<text x="455.7" y="262.3" text-anchor="middle" font-size="10" fill="#0b0b0b">3.0</text>
+<path d="M474.1 336.0V210.2Q474.1 206.2 478.1 206.2H498.9Q502.9 206.2 502.9 210.2V336.0Z" fill="#1baf7a"><title>H1 B0 graph, no hint: 5.7</title></path>
+<text x="488.5" y="201.2" text-anchor="middle" font-size="10" fill="#0b0b0b">5.7</text>
+<text x="571.0" y="362" text-anchor="middle" font-size="12" fill="#52514e">H2</text>
+<path d="M523.7 336.0V172.0Q523.7 168.0 527.7 168.0H548.6Q552.6 168.0 552.6 172.0V336.0Z" fill="#2a78d6"><title>H2 A grep only: 7.3</title></path>
+<text x="538.2" y="163.0" text-anchor="middle" font-size="10" fill="#0b0b0b">7.3</text>
+<path d="M556.6 336.0V179.6Q556.6 175.6 560.6 175.6H581.4Q585.4 175.6 585.4 179.6V336.0Z" fill="#eb6834"><title>H2 B graph + hint: 7.0</title></path>
+<text x="571.0" y="170.6" text-anchor="middle" font-size="10" fill="#0b0b0b">7.0</text>
+<path d="M589.4 336.0V179.6Q589.4 175.6 593.4 175.6H614.2Q618.2 175.6 618.2 179.6V336.0Z" fill="#1baf7a"><title>H2 B0 graph, no hint: 7.0</title></path>
+<text x="603.8" y="170.6" text-anchor="middle" font-size="10" fill="#0b0b0b">7.0</text>
+<text x="686.3" y="362" text-anchor="middle" font-size="12" fill="#52514e">H3</text>
+<path d="M639.1 336.0V141.5Q639.1 137.5 643.1 137.5H663.9Q667.9 137.5 667.9 141.5V336.0Z" fill="#2a78d6"><title>H3 A grep only: 8.7</title></path>
+<text x="653.5" y="132.5" text-anchor="middle" font-size="10" fill="#0b0b0b">8.7</text>
+<path d="M671.9 336.0V141.5Q671.9 137.5 675.9 137.5H696.8Q700.8 137.5 700.8 141.5V336.0Z" fill="#eb6834"><title>H3 B graph + hint: 8.7</title></path>
+<text x="686.3" y="132.5" text-anchor="middle" font-size="10" fill="#0b0b0b">8.7</text>
+<path d="M704.8 336.0V156.7Q704.8 152.7 708.8 152.7H729.6Q733.6 152.7 733.6 156.7V336.0Z" fill="#1baf7a"><title>H3 B0 graph, no hint: 8.0</title></path>
+<text x="719.2" y="147.7" text-anchor="middle" font-size="10" fill="#0b0b0b">8.0</text>
+</svg>

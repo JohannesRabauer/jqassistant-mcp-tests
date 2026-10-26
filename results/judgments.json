@@ -1,0 +1,322 @@
+{
+ "T03-A-1": {
+  "score": 9,
+  "complete": true,
+  "collateral_damage": false,
+  "notes": "The diff adds the method to the interface and implements it in all four known src/main implementors (Range, TopicCount, SpecifiedPositions, FlowOrQps), each returning a lower-case name, with no unrelated edits. I couldn't check the repository for other implementors in src/main (anonymous classes or lambdas), and SpecifiedPositions is missing a blank line before the new method, which is only a style issue."
+ },
+ "T03-A-2": {
+  "score": 8,
+  "complete": true,
+  "collateral_damage": false,
+  "notes": "The interface declaration and all four known src/main implementations (Range, TopicCount, SpecifiedPositions, FlowOrQps) are updated with plausible short lower-case names, and the change should compile. Small nit: SpecifiedPositionsBundleSplitAlgorithm is missing a blank line before the new method, and since I couldn't search the repo, I couldn't confirm there are no other src/main implementations or lambdas."
+ },
+ "T03-A-3": {
+  "score": 9,
+  "complete": true,
+  "collateral_damage": false,
+  "notes": "The interface method is declared, and all four known src/main implementations (Range, TopicCount, SpecifiedPositions, FlowOrQps) return short lower-case names; no unrelated changes. Small style issue: SpecifiedPositionsBundleSplitAlgorithm is missing a blank line after the constructor, and I could not check the repository for other implementations, such as a lambda or anonymous class in another module."
+ },
+ "T03-B-1": {
+  "score": 9,
+  "complete": true,
+  "collateral_damage": false,
+  "notes": "The diff adds the interface method and implements it in all four known src/main implementations (Range, TopicCount, SpecifiedPositions, FlowOrQps) with lower-case names, so it should compile. The only flaw is cosmetic: a blank line is missing before the new method in SpecifiedPositionsBundleSplitAlgorithm."
+ },
+ "T03-B-2": {
+  "score": 9,
+  "complete": true,
+  "collateral_damage": false,
+  "notes": "The diff adds the method to the interface and implements it in all four known src/main implementations (RangeEquallyDivide, TopicCountEquallyDivide, SpecifiedPositions, FlowOrQpsEquallyDivide), and it should compile. One small style issue: SpecifiedPositionsBundleSplitAlgorithm has no blank line between the constructor and the new method, and any test-only implementations under src/test were left alone, as the task required."
+ },
+ "T03-B-3": {
+  "score": 8,
+  "complete": true,
+  "collateral_damage": false,
+  "notes": "The interface declaration and all four known src/main implementations (RangeEquallyDivide, TopicCountEquallyDivide, SpecifiedPositions, FlowOrQpsEquallyDivide) get a `getName()` override returning a lower-case name, and the change should compile. I couldn't confirm that no lambda or anonymous implementation exists elsewhere in src/main; SpecifiedPositions is missing a blank line before the new method, and `specified_positions_divide` is inconsistent with that class's name."
+ },
+ "T03-B0-1": {
+  "score": 9,
+  "complete": true,
+  "collateral_damage": false,
+  "notes": "The diff adds the interface method and implements it in all four known src/main implementations (Range, TopicCount, SpecifiedPositions, FlowOrQps) with short lower-case names, so it should compile. The only flaw is a missing blank line before the new method in SpecifiedPositionsBundleSplitAlgorithm, and any anonymous implementations in src/test could break, though the task allows edits only under src/main."
+ },
+ "T03-B0-2": {
+  "score": 9,
+  "complete": true,
+  "collateral_damage": false,
+  "notes": "The method is declared on the interface and implemented in all four known src/main implementations, and each returns the matching existing algorithm-name constant (range_equally_divide, topic_count_equally_divide, specified_positions_divide, flow_or_qps_equally_divide); there are no unrelated edits and it should compile. I could not search the repository, so I can't rule out an anonymous class or lambda implementation elsewhere in src/main, though none is known in Pulsar."
+ },
+ "T03-B0-3": {
+  "score": 8,
+  "complete": true,
+  "collateral_damage": false,
+  "notes": "The diff declares `getName()` and implements it in the four known src/main implementations (Range, TopicCount, SpecifiedPositions, FlowOrQps), and the code should compile. I could not check the repository, so other src/main implementers (such as anonymous classes) can't be ruled out, and in FlowOrQps the method is oddly placed above the field declarations, which is only a style issue."
+ },
+ "T04-A-1": {
+  "score": 7,
+  "complete": false,
+  "collateral_damage": false,
+  "notes": "`getNamespaceName()` is added and the edited callers look correct, but `getNamespaceObject()` is kept as an `@Override` delegate because the `ServiceUnitId` interface requires it, so it is a partial rename rather than a true rename. It should compile, but only about 10 broker files are touched and other `NamespaceBundle`-typed callers (for example in the load managers, `OwnershipCache` and the admin code) probably still call the old method unnoticed, because the delegate keeps them compiling."
+ },
+ "T04-A-2": {
+  "score": 6,
+  "complete": false,
+  "collateral_damage": false,
+  "notes": "The diff adds `getNamespaceName()` but keeps `getNamespaceObject()` as a delegating `@Override`, which is needed because the method comes from the `ServiceUnitId` interface; that means this is not a true rename, and any caller that was missed still compiles against the old name. It changes about a dozen broker callers, but Pulsar likely has more `NamespaceBundle.getNamespaceObject()` callers that were not changed (for example in `ExtensibleLoadManagerImpl`, `ModularLoadManagerImpl`, `LoadManagerShared`, `OwnershipCache`, `PulsarWebResource` and the admin `*Base` classes), so completeness is doubtful; it should still compile and touches nothing unrelated."
+ },
+ "T04-A-3": {
+  "score": 6,
+  "complete": false,
+  "collateral_damage": false,
+  "notes": "The agent added `getNamespaceName()` but kept `getNamespaceObject()` as a delegating `@Override` because `ServiceUnitId` requires it. That compiles, but the method was not strictly renamed, and with the old method still there, callers it missed (e.g. load-manager or admin code) won't show up as compile errors, so I can't confirm every `NamespaceBundle` caller was updated."
+ },
+ "T04-B-1": {
+  "score": 4,
+  "complete": false,
+  "collateral_damage": false,
+  "notes": "`findRedirectLookupResultAsync(ServiceUnitId bundle)` in NamespaceService now calls `getNamespaceName()` on a `ServiceUnitId`, and that interface does not declare it, so this almost certainly won't compile. The agent also added a new method and kept `getNamespaceObject()` as a delegating override instead of renaming it, so any caller it missed still compiles silently, which makes it hard to confirm every caller (for example in load-manager or ownership classes) was updated."
+ },
+ "T04-B-2": {
+  "score": 7,
+  "complete": false,
+  "collateral_damage": false,
+  "notes": "The agent added `getNamespaceName()` but kept `getNamespaceObject()` on NamespaceBundle as a delegating `@Override`, so this is not a strict rename (it is defensible because the `ServiceUnitId` interface requires that method, and the code should compile). The diff updates only a subset of call sites, so some bundle callers elsewhere in src/main may still use the old name, for example in the older load-manager code, the admin classes or OwnershipCache."
+ },
+ "T04-B-3": {
+  "score": 7,
+  "complete": false,
+  "collateral_damage": false,
+  "notes": "The diff should compile: `NamespaceBundle` keeps `getNamespaceObject()` as a delegating override, which the `ServiceUnitId` interface requires, and no `TopicName` or other unrelated methods were touched. The rename is incomplete, though: the old method stays as a duplicate, and because it still compiles, any callers the diff missed (likely in other broker classes such as ownership, admin and load-manager code) would go unnoticed."
+ },
+ "T04-B0-1": {
+  "score": 3,
+  "complete": false,
+  "collateral_damage": false,
+  "notes": "NamespaceBundle implements the ServiceUnitId interface, which declares an abstract getNamespaceObject(). The diff deletes the @Override and renames the method without adding a delegating getNamespaceObject() or changing the interface, so NamespaceBundle will almost certainly fail to compile as a non-abstract class missing an interface method; the caller updates themselves look correct and leave TopicName alone."
+ },
+ "T04-B0-2": {
+  "score": 6,
+  "complete": false,
+  "collateral_damage": false,
+  "notes": "The agent added `getNamespaceName()` and kept `getNamespaceObject()` as an `@Override` that delegates to it, so the old method was never removed or renamed (keeping it is defensible because `ServiceUnitId` requires it) and the code should compile. Any caller the diff missed (likely spots include ExtensibleLoadManagerImpl, NamespaceBundles, the admin/web resources and other modules) would still compile against the old name, so the build cannot confirm every caller was updated; no unrelated `TopicName` or `ServiceUnitId` methods were touched."
+ },
+ "T04-B0-3": {
+  "score": 6,
+  "complete": false,
+  "collateral_damage": false,
+  "notes": "The diff adds a new `getNamespaceName()` and keeps `getNamespaceObject()` as an `@Override` delegate. That likely compiles, since the `ServiceUnitId` interface still needs it, but it is not a real rename. Callers that are not updated still compile silently, so the diff cannot prove all callers were migrated, and likely callers in pulsar-broker such as `ExtensibleLoadManagerImpl`, `OwnershipCache`, the modular load manager and the admin `*Base` classes are not in it."
+ },
+ "T08-A-1": {
+  "score": 9,
+  "complete": true,
+  "collateral_damage": false,
+  "notes": "The diff adds the field with @FieldContext under CATEGORY_POLICIES, adds the entry with its default to broker.conf, and logs both values next to where the topicLoadRequestSemaphore is created in BrokerService, without changing how the limit works. It should compile, since ServiceConfiguration's Lombok annotations generate the getter; one small gap is that the dynamic-update path for maxConcurrentTopicLoadRequest, if one exists, was not looked at."
+ },
+ "T08-A-2": {
+  "score": 7,
+  "complete": false,
+  "collateral_damage": false,
+  "notes": "The config field (with @FieldContext, CATEGORY_POLICIES and default 100) and the startup log next to the topicLoadRequestSemaphore in BrokerService are correct, and should compile because Lombok generates the getter. However, the requested conf/broker.conf entry is missing; the task's 'src/main only' rule conflicts with that request, but the diff neither adds the entry nor mentions the omission."
+ },
+ "T08-A-3": {
+  "score": 6,
+  "complete": false,
+  "collateral_damage": false,
+  "notes": "The ServiceConfiguration field is correct, and Lombok will generate its getter, so the new BrokerService startup log line should compile and leaves the existing semaphore behaviour unchanged. The required conf/broker.conf entry `maxConcurrentTopicLoadsPerNamespace=100` is missing from the diff, so the task is incomplete."
+ },
+ "T08-B-1": {
+  "score": 6,
+  "complete": false,
+  "collateral_damage": false,
+  "notes": "The ServiceConfiguration field (Lombok-generated getter) and the startup log next to the topicLoadRequestSemaphore in BrokerService are correct and should compile without unrelated edits. The diff does not add the required `maxConcurrentTopicLoadsPerNamespace=100` entry to conf/broker.conf, so the task is incomplete."
+ },
+ "T08-B-2": {
+  "score": 9,
+  "complete": true,
+  "collateral_damage": false,
+  "notes": "The field is declared with @FieldContext, uses CATEGORY_POLICIES and defaults to 100. It is also added to conf/broker.conf and logged next to maxConcurrentTopicLoadRequest where the topicLoadRequestSemaphore is created in BrokerService, without changing how the limit works. The code should compile because ServiceConfiguration generates its getters with Lombok, and the diff touches nothing else."
+ },
+ "T08-B-3": {
+  "score": 9,
+  "complete": true,
+  "collateral_damage": false,
+  "notes": "The field has the correct category, default and @FieldContext doc, and it is logged next to the old limit in the BrokerService constructor, where topicLoadRequestSemaphore is created; the existing limit behaviour is unchanged. The getter call compiles because ServiceConfiguration uses class-level Lombok getters, and broker.conf is updated, though standalone.conf is left as is (the task did not ask for it)."
+ },
+ "T08-B0-1": {
+  "score": 9,
+  "complete": true,
+  "collateral_damage": false,
+  "notes": "The diff adds the field with the right type, default, category and @FieldContext doc, adds the entry to conf/broker.conf, and logs both values in BrokerService right where the existing topicLoadRequestSemaphore is built, leaving the limit unchanged. It should compile because ServiceConfiguration's getters are generated by Lombok, but I couldn't confirm there are no other uses of maxConcurrentTopicLoadRequest elsewhere in the codebase."
+ },
+ "T08-B0-2": {
+  "score": 6,
+  "complete": false,
+  "collateral_damage": false,
+  "notes": "The ServiceConfiguration field and the startup log next to the topicLoadRequestSemaphore in BrokerService are correct and should compile, since the class's Lombok getters generate getMaxConcurrentTopicLoadsPerNamespace(). The required conf/broker.conf entry with the default value of 100 is missing."
+ },
+ "T08-B0-3": {
+  "score": 9,
+  "complete": true,
+  "collateral_damage": false,
+  "notes": "The diff adds the field with @FieldContext under CATEGORY_POLICIES and default 100, adds the entry to broker.conf, and logs both values in the BrokerService constructor right where the topicLoadRequestSemaphore is built, without changing how the limit works. It should compile because Lombok generates the getter, though the log only covers startup and not dynamic updates to the existing limit, which is acceptable."
+ },
+ "H1-A-1": {
+  "score": 3,
+  "complete": false,
+  "collateral_damage": true,
+  "notes": "The agent also renamed `getLedgerId()` on `NestedPositionInfo`, a protobuf class and not a `Position`: `lowerEndpoint`/`upperEndpoint` in `ManagedCursorImpl` and `terminatedPosition` in `ManagedLedgerImpl`, so those call sites will not compile. The diff is cut off inside `ManagedLedgerOfflineBacklog`, so I could not verify the remaining implementations and callers in pulsar-common, pulsar-broker-common and pulsar-broker."
+ },
+ "H1-A-2": {
+  "score": 3,
+  "complete": false,
+  "collateral_damage": true,
+  "notes": "In ManagedCursorImpl (around lines 777-801), the diff renames `getLedgerId()` calls on `NestedPositionInfo` (`lowerEndpoint`/`upperEndpoint` from `messageRange`) to `getLedger()`, but that is a protobuf class, not a Position, so this would not compile. The diff is also cut off, so the Position-typed call sites in pulsar-broker, pulsar-broker-common and the other modules cannot be confirmed as changed."
+ },
+ "H1-A-3": {
+  "score": 2,
+  "complete": false,
+  "collateral_damage": true,
+  "notes": "The protobuf `NestedPositionInfo.getLedgerId()` was wrongly renamed at several call sites: `lowerEndpoint`/`upperEndpoint` in ManagedCursorImpl, `range.getLowerEndpoint()`/`getUpperEndpoint()` in ManagedLedgerFactoryImpl and `terminatedPosition` in ManagedLedgerImpl, so the code will not compile. The diff also stops in managed-ledger and contains no changes to pulsar-broker, pulsar-broker-common or the other modules in scope, so many call sites and implementations are likely still missing."
+ },
+ "H1-B-1": {
+  "score": 5,
+  "complete": false,
+  "collateral_damage": true,
+  "notes": "In ManagedLedgerImpl (around line 442), `terminatedPosition.getLedgerId()` on a `NestedPositionInfo` protobuf object was wrongly renamed to `getLedger()`, so that line will not compile; the other visible renames are correct Position calls. The diff is cut off partway through managed-ledger and shows no changes in pulsar-broker or the other modules, so I can't confirm the rename is complete."
+ },
+ "H1-B-2": {
+  "score": 3,
+  "complete": false,
+  "collateral_damage": true,
+  "notes": "In ManagedCursorImpl (around lines 777\u2013801), the agent wrongly renamed `getLedgerId()` to `getLedger()` on `NestedPositionInfo`, which is a generated protobuf/lightproto class and not a Position, so the build will fail. The diff is cut off, so I could not confirm the other implementations and the call sites in pulsar-broker and the other modules; the Position, AckSetPositionImpl and ImmutablePositionImpl changes shown look correct."
+ },
+ "H1-B-3": {
+  "score": 1,
+  "complete": false,
+  "collateral_damage": true,
+  "notes": "The Position renames look correct, but many unrelated `getLedgerId()` calls were deleted instead of left alone. Examples: Entry calls in `ENTRY_COMPARATOR` became `e1 < e2`, `positionInfo.getLedgerId()` became `positionInfo`, and dozens of `LedgerInfo` calls became `ls`, `ledgerInfo` or `info` (e.g. `ledgers.put(ls, ls)`), so this won't compile and the diff is truncated, which leaves the broker modules unverifiable."
+ },
+ "H1-B0-1": {
+  "score": 7,
+  "complete": false,
+  "collateral_damage": false,
+  "notes": "The visible changes are precise: the interface, AckSetPositionImpl, ImmutablePositionImpl and the managed-ledger call sites are renamed, while LedgerInfo.getLedgerId() calls (for example ls.getLedgerId(), ledgerInfo.getLedgerId()) are correctly left alone. The diff cuts off at OpFindNewest, so I can't confirm that the other implementers (for example PositionRecyclable) or the many pulsar-broker / broker-common call sites were updated, and any one missed would break compilation."
+ },
+ "H1-B0-2": {
+  "score": 3,
+  "complete": false,
+  "collateral_damage": true,
+  "notes": "In ManagedLedgerImpl, the agent also renamed `getLedgerId()` on `LedgerInfo` (`ls.getLedger()` near hunks @@3435 and @@3855). That method is unrelated and no `getLedger()` exists there, so the build will fail. The diff is cut off inside OpFindNewest, so I can't confirm that call sites in pulsar-broker and the other modules were covered."
+ },
+ "H1-B0-3": {
+  "score": 7,
+  "complete": false,
+  "collateral_damage": false,
+  "notes": "The visible renames are correct and precise: the interface declaration, the default methods, AckSetPositionImpl, ImmutablePositionImpl and the managed-ledger call sites are all changed, while LedgerInfo.getLedgerId() and the protobuf setLedgerId calls are left alone. The diff is cut off partway through OpFindNewest, so I can't confirm that the other implementations (e.g. PositionRecyclable) or the callers in pulsar-broker and the other modules were updated."
+ },
+ "H2-A-1": {
+  "score": 8,
+  "complete": true,
+  "collateral_damage": false,
+  "notes": "The diff renames the interface method, both implementations (PersistentSubscription and NonPersistentSubscription) and a plausible full set of call sites, including the `PersistentSubscription::getName` method reference, while leaving Topic, cursor and other `getName()` calls alone. I could not check the rest of the codebase, so other Subscription callers or test-free src/main uses, such as in admin or stats code, may still be missed."
+ },
+ "H2-A-2": {
+  "score": 6,
+  "complete": false,
+  "collateral_damage": false,
+  "notes": "The interface, both implementations (PersistentSubscription and NonPersistentSubscription) and the call sites shown are renamed correctly, and the diff does not touch any unrelated getName() methods. However, the change looks too small for pulsar-broker: likely remaining callers such as NonPersistentTopic, the dispatchers, ReplicatedSubscriptionsController, admin/stats code and `Subscription::getName` method references are not covered, so compilation probably fails."
+ },
+ "H2-A-3": {
+  "score": 8,
+  "complete": true,
+  "collateral_damage": false,
+  "notes": "The interface declaration, both implementations (PersistentSubscription and NonPersistentSubscription) and a plausible set of call sites are renamed, the method reference `PersistentSubscription::getSubscriptionName` included, and no unrelated `getName()` calls were touched. I can't rule out a few missed call sites (for example unqualified `getName()` calls inside the subscription classes), and several changed lines are now over 120 characters, so checkstyle would likely flag them even though the code should compile."
+ },
+ "H2-B-1": {
+  "score": 7,
+  "complete": true,
+  "collateral_damage": false,
+  "notes": "The diff renames the interface method, both concrete implementations (PersistentSubscription and NonPersistentSubscription) and many call sites, including the method reference `PersistentSubscription::getSubscriptionName`; it leaves unrelated `getName()` calls on topics and cursors alone. Two things are unverified: a diff alone can't show whether any call site was missed, and several changed lines (PersistentTopic, MLPendingAckStoreProvider, SharedConsumerAssignor) now exceed 120 characters, which could fail Pulsar's checkstyle even if the code compiles."
+ },
+ "H2-B-2": {
+  "score": 7,
+  "complete": true,
+  "collateral_damage": false,
+  "notes": "I could only check the diff, not the full source tree. It renames the interface method, both implementations (`PersistentSubscription` and `NonPersistentSubscription`) and many call sites, including the `PersistentSubscription::getName` method reference, and leaves the `getName()` methods of other types (Topic, cursor) alone, but I can't rule out missed callers elsewhere in pulsar-broker (other dispatchers, `BrokerService`, admin/stats code). Several changed lines (for example in `SharedConsumerAssignor` and `MLPendingAckStoreProvider`) probably exceed Pulsar's 120-character checkstyle limit, which may fail the build even though the Java should compile."
+ },
+ "H2-B-3": {
+  "score": null,
+  "notes": "judge error 'result'"
+ },
+ "H2-B0-1": {
+  "score": 7,
+  "complete": true,
+  "collateral_damage": false,
+  "notes": "The interface method, both implementations (PersistentSubscription and NonPersistentSubscription) and about 25 qualified call sites are renamed consistently, and no unrelated getName() is touched (topic, cursor and dispatcher names are left alone). I could not check the code itself, so unqualified getName() calls inside the subscription classes or in admin, stats or compaction code may have been missed and would break compilation; a few lines also become long enough to risk checkstyle."
+ },
+ "H2-B0-2": {
+  "score": null,
+  "notes": "judge error 'result'"
+ },
+ "H2-B0-3": {
+  "score": 7,
+  "complete": true,
+  "collateral_damage": false,
+  "notes": "The diff renames the interface method and both overrides (PersistentSubscription, NonPersistentSubscription), and the call sites look correct; it leaves alone other `getName()` methods such as topic, cursor and the dispatcher's own `getSubscriptionName()`. I can't confirm every caller was found because Pulsar has many call sites, and several edited lines (PersistentTopic, MLPendingAckStoreProvider, Consumer, SharedConsumerAssignor) now exceed 120 characters, which may break the checkstyle step of the build."
+ },
+ "H3-A-1": {
+  "score": 8,
+  "complete": true,
+  "collateral_damage": false,
+  "notes": "The interface declaration, all three implementations (ConsistentHashing, HashRangeAutoSplit, HashRangeExclusive), the default `select(byte[])` delegate and the dispatcher call sites are renamed, and the `select(byte[])` overload is correctly left alone. I could not check the repository for other `select(int)` callers, but any missed one would fail to compile because `int` cannot be passed to `select(byte[])`, so the separate compile check would catch it."
+ },
+ "H3-A-2": {
+  "score": 9,
+  "complete": true,
+  "collateral_damage": false,
+  "notes": "The diff renames the interface method, all three known implementations (ConsistentHashing, HashRangeAutoSplit, HashRangeExclusive), the internal call in the default `select(byte[])` method, and the int-hash call sites in the three dispatchers, while leaving the `select(byte[])` overload alone. I couldn't confirm from the diff alone that no other src/main caller or implementation is missing, but it looks complete and should compile."
+ },
+ "H3-A-3": {
+  "score": 9,
+  "complete": true,
+  "collateral_damage": false,
+  "notes": "The diff renames the interface's abstract select(int), all three implementations (ConsistentHashing, HashRangeAutoSplit, HashRangeExclusive), the internal call in the select(byte[]) default method, and the int-hash call sites in all three dispatchers. The select(byte[]) overload is left alone as it should be, so this should compile, though I could not confirm from the diff alone that no other select(int) callers exist in pulsar-broker src/main."
+ },
+ "H3-B-1": {
+  "score": 9,
+  "complete": true,
+  "collateral_damage": false,
+  "notes": "The diff renames the interface method, all three implementations (ConsistentHashing, HashRangeAutoSplit, HashRangeExclusive), the internal call in the default `select(byte[])`, and the int-hash call sites in the persistent, classic and non-persistent dispatchers, while leaving `select(byte[])` alone as required. I couldn't check the codebase itself for other int-hash callers in src/main, such as method references or other dispatcher or tracker classes, so I can't fully confirm it is complete."
+ },
+ "H3-B-2": {
+  "score": 8,
+  "complete": true,
+  "collateral_damage": false,
+  "notes": "The interface declaration, the default `select(byte[])` delegate, all three known implementations and the five visible dispatcher call sites are renamed consistently, and the `select(byte[])` overload correctly stays as it is. I couldn't confirm from the diff alone that no other `select(int)` call sites exist in src/main (for example in other broker helpers), so full completeness is plausible but unverified."
+ },
+ "H3-B-3": {
+  "score": 9,
+  "complete": true,
+  "collateral_damage": false,
+  "notes": "The rename covers the interface declaration, the call inside the default `select(byte[])` method, all three implementations (ConsistentHashing, HashRangeAutoSplit, HashRangeExclusive) and every dispatcher call that passes an int hash; the `select(byte[])` overload correctly stays unchanged, so the code should compile. I can't rule out a missed caller elsewhere in scope (such as a method reference), but none of the usual broker call sites seem to be missing."
+ },
+ "H3-B0-1": {
+  "score": 8,
+  "complete": true,
+  "collateral_damage": false,
+  "notes": "The diff renames the interface declaration, all three implementations, the internal call in the default `select(byte[])` method, and the dispatcher call sites, and leaves the unrelated `select(byte[])` overload alone. I couldn't check the whole module tree, so a call or method reference elsewhere, such as `selector::select`, might have been missed; the edits shown should compile."
+ },
+ "H3-B0-2": {
+  "score": 8,
+  "complete": true,
+  "collateral_damage": false,
+  "notes": "The diff renames the interface method, all three implementations, the interface's own default `select(byte[])` delegation, and the visible `selector.select(int)` call sites in the dispatchers, while correctly leaving the `select(byte[])` overload unchanged. Without access to the full source I can't rule out a missed caller elsewhere (for example a call inside another class or a Javadoc `{@link #select(int)}` reference); a missed caller would fail to compile because `select(byte[])` can't accept an `int`."
+ },
+ "H3-B0-3": {
+  "score": 8,
+  "complete": true,
+  "collateral_damage": false,
+  "notes": "The interface declaration, all three implementations (ConsistentHashing, HashRangeAutoSplit, HashRangeExclusive), the default `select(byte[])` delegate and the visible dispatcher call sites are renamed, and the `select(byte[])` overload is correctly left alone, so this looks likely to compile. I couldn't confirm against the source that no other callers exist (e.g. `select(int)` calls elsewhere in pulsar-broker or `selector::select` method references), so completeness is likely but not proven."
+ }
+}

@@ -1,0 +1,40 @@
+[ERROR] /src/managed-ledger/src/main/java/org/apache/bookkeeper/mledger/impl/ManagedLedgerImpl.java:[3307,53] incompatible types: org.apache.bookkeeper.mledger.proto.ManagedLedgerInfo.LedgerInfo cannot be converted to long
+[ERROR] /src/managed-ledger/src/main/java/org/apache/bookkeeper/mledger/impl/ManagedLedgerImpl.java:[3314,54] incompatible types: org.apache.bookkeeper.mledger.proto.ManagedLedgerInfo.LedgerInfo cannot be converted to long
+[ERROR] /src/managed-ledger/src/main/java/org/apache/bookkeeper/mledger/impl/ManagedLedgerImpl.java:[3361,29] incompatible types: org.apache.bookkeeper.mledger.proto.ManagedLedgerInfo.LedgerInfo cannot be converted to java.lang.Long
+[ERROR] /src/managed-ledger/src/main/java/org/apache/bookkeeper/mledger/impl/ManagedLedgerImpl.java:[3379,25] no suitable method found for asyncDeleteLedger(org.apache.bookkeeper.mledger.proto.ManagedLedgerInfo.LedgerInfo,org.apache.bookkeeper.mledger.proto.ManagedLedgerInfo.LedgerInfo)
+[ERROR]     method org.apache.bookkeeper.mledger.impl.ManagedLedgerImpl.asyncDeleteLedger(long,org.apache.bookkeeper.mledger.proto.ManagedLedgerInfo.LedgerInfo) is not applicable
+[ERROR]       (argument mismatch; org.apache.bookkeeper.mledger.proto.ManagedLedgerInfo.LedgerInfo cannot be converted to long)
+[ERROR]     method org.apache.bookkeeper.mledger.impl.ManagedLedgerImpl.asyncDeleteLedger(long,long) is not applicable
+[ERROR]       (argument mismatch; org.apache.bookkeeper.mledger.proto.ManagedLedgerInfo.LedgerInfo cannot be converted to long)
+[ERROR] /src/managed-ledger/src/main/java/org/apache/bookkeeper/mledger/impl/ManagedLedgerImpl.java:[3384,46] incompatible types: org.apache.bookkeeper.mledger.proto.ManagedLedgerInfo.LedgerInfo cannot be converted to long
+[ERROR] /src/managed-ledger/src/main/java/org/apache/bookkeeper/mledger/impl/ManagedLedgerImpl.java:[3385,57] incompatible types: org.apache.bookkeeper.mledger.proto.ManagedLedgerInfo.LedgerInfo cannot be converted to long
+[ERROR] /src/managed-ledger/src/main/java/org/apache/bookkeeper/mledger/impl/ManagedLedgerImpl.java:[3438,57] bad operand types for binary operator '=='
+[ERROR]   first type:  org.apache.bookkeeper.mledger.proto.ManagedLedgerInfo.LedgerInfo
+[ERROR]   second type: long
+[ERROR] /src/managed-ledger/src/main/java/org/apache/bookkeeper/mledger/impl/ManagedLedgerImpl.java:[3444,34] incompatible types: org.apache.bookkeeper.mledger.proto.ManagedLedgerInfo.LedgerInfo cannot be converted to long
+[ERROR] /src/managed-ledger/src/main/java/org/apache/bookkeeper/mledger/impl/ManagedLedgerImpl.java:[3451,49] incompatible types: org.apache.bookkeeper.mledger.proto.ManagedLedgerInfo.LedgerInfo cannot be converted to long
+[ERROR] /src/managed-ledger/src/main/java/org/apache/bookkeeper/mledger/impl/ManagedLedgerImpl.java:[3505,47] incompatible types: org.apache.bookkeeper.mledger.proto.ManagedLedgerInfo.LedgerInfo cannot be converted to long
+[ERROR] /src/managed-ledger/src/main/java/org/apache/bookkeeper/mledger/impl/ManagedLedgerImpl.java:[3730,51] incompatible types: org.apache.bookkeeper.mledger.proto.ManagedLedgerInfo.LedgerInfo cannot be converted to long
+[ERROR] /src/managed-ledger/src/main/java/org/apache/bookkeeper/mledger/impl/ManagedLedgerImpl.java:[3858,50] bad operand types for binary operator '>'
+[ERROR]   first type:  long
+[ERROR]   second type: org.apache.bookkeeper.mledger.proto.ManagedLedgerInfo.LedgerInfo
+[ERROR] /src/managed-ledger/src/main/java/org/apache/bookkeeper/mledger/impl/ManagedLedgerImpl.java:[3864,43] incompatible types: org.apache.bookkeeper.mledger.proto.ManagedLedgerInfo.LedgerInfo cannot be converted to long
+[ERROR] /src/managed-ledger/src/main/java/org/apache/bookkeeper/mledger/impl/ManagedLedgerImpl.java:[3918,29] incompatible types: org.apache.bookkeeper.mledger.proto.ManagedLedgerInfo.LedgerInfo cannot be converted to long
+[ERROR] /src/managed-ledger/src/main/java/org/apache/bookkeeper/mledger/impl/ManagedLedgerImpl.java:[4398,47] incompatible types: org.apache.bookkeeper.mledger.proto.ManagedLedgerInfo.LedgerInfo cannot be converted to long
+[ERROR] /src/managed-ledger/src/main/java/org/apache/bookkeeper/mledger/impl/ManagedLedgerImpl.java:[5205,33] incompatible types: org.apache.bookkeeper.mledger.proto.ManagedLedgerInfo.LedgerInfo cannot be converted to long
+[ERROR] /src/managed-ledger/src/main/java/org/apache/bookkeeper/mledger/impl/ManagedLedgerImpl.java:[5234,41] incompatible types: org.apache.bookkeeper.mledger.proto.ManagedLedgerInfo.LedgerInfo cannot be converted to long
+[ERROR] /src/managed-ledger/src/main/java/org/apache/bookkeeper/mledger/impl/ManagedCursorImpl.java:[126,23] bad operand types for binary operator '<'
+[ERROR]   first type:  org.apache.bookkeeper.mledger.Entry
+[ERROR]   second type: org.apache.bookkeeper.mledger.Entry
+[ERROR] /src/managed-ledger/src/main/java/org/apache/bookkeeper/mledger/impl/ManagedCursorImpl.java:[675,60] incompatible types: org.apache.bookkeeper.mledger.proto.PositionInfo cannot be converted to long
+[ERROR] /src/managed-ledger/src/main/java/org/apache/bookkeeper/mledger/impl/ManagedCursorImpl.java:[2795,80] incompatible types: org.apache.bookkeeper.mledger.Entry cannot be converted to long
+[ERROR] -> [Help 1]
+[ERROR] 
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException
+[ERROR] 
+[ERROR] After correcting the problems, you can resume the build with the command
+[ERROR]   mvn <args> -rf :managed-ledger

@@ -1,0 +1,118 @@
+diff --git a/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/ConsistentHashingStickyKeyConsumerSelector.java b/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/ConsistentHashingStickyKeyConsumerSelector.java
+index 06bac02..4cabbc3 100644
+--- a/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/ConsistentHashingStickyKeyConsumerSelector.java
++++ b/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/ConsistentHashingStickyKeyConsumerSelector.java
+@@ -233,7 +233,7 @@ public class ConsistentHashingStickyKeyConsumerSelector implements StickyKeyCons
+     }
+ 
+     @Override
+-    public Consumer select(int hash) {
++    public Consumer selectConsumer(int hash) {
+         rwLock.readLock().lock();
+         try {
+             if (hashRing.isEmpty()) {
+diff --git a/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/HashRangeAutoSplitStickyKeyConsumerSelector.java b/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/HashRangeAutoSplitStickyKeyConsumerSelector.java
+index 48d5491..6013450 100644
+--- a/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/HashRangeAutoSplitStickyKeyConsumerSelector.java
++++ b/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/HashRangeAutoSplitStickyKeyConsumerSelector.java
+@@ -134,7 +134,7 @@ public class HashRangeAutoSplitStickyKeyConsumerSelector implements StickyKeyCon
+     }
+ 
+     @Override
+-    public Consumer select(int hash) {
++    public Consumer selectConsumer(int hash) {
+         if (!rangeMap.isEmpty()) {
+             return rangeMap.ceilingEntry(hash).getValue();
+         } else {
+diff --git a/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/HashRangeExclusiveStickyKeyConsumerSelector.java b/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/HashRangeExclusiveStickyKeyConsumerSelector.java
+index 7fb9983..7b87362 100644
+--- a/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/HashRangeExclusiveStickyKeyConsumerSelector.java
++++ b/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/HashRangeExclusiveStickyKeyConsumerSelector.java
+@@ -97,7 +97,7 @@ public class HashRangeExclusiveStickyKeyConsumerSelector implements StickyKeyCon
+     }
+ 
+     @Override
+-    public Consumer select(int hash) {
++    public Consumer selectConsumer(int hash) {
+         if (rangeMap.isEmpty()) {
+             return null;
+         }
+diff --git a/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/StickyKeyConsumerSelector.java b/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/StickyKeyConsumerSelector.java
+index 099929f..aa771f6 100644
+--- a/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/StickyKeyConsumerSelector.java
++++ b/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/StickyKeyConsumerSelector.java
+@@ -69,7 +69,7 @@ public interface StickyKeyConsumerSelector {
+      * @return the selected consumer
+      */
+     default Consumer select(byte[] stickyKey) {
+-        return select(makeStickyKeyHash(stickyKey));
++        return selectConsumer(makeStickyKeyHash(stickyKey));
+     }
+ 
+     /**
+@@ -89,7 +89,7 @@ public interface StickyKeyConsumerSelector {
+      * @param hash the hash corresponding to the sticky key
+      * @return the selected consumer
+      */
+-    Consumer select(int hash);
++    Consumer selectConsumer(int hash);
+ 
+     /**
+      * Get the full range of hash values used by this selector. The upper bound is exclusive.
+diff --git a/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/nonpersistent/NonPersistentStickyKeyDispatcherMultipleConsumers.java b/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/nonpersistent/NonPersistentStickyKeyDispatcherMultipleConsumers.java
+index 2e884eb..bd41cc0 100644
+--- a/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/nonpersistent/NonPersistentStickyKeyDispatcherMultipleConsumers.java
++++ b/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/nonpersistent/NonPersistentStickyKeyDispatcherMultipleConsumers.java
+@@ -154,7 +154,7 @@ public class NonPersistentStickyKeyDispatcherMultipleConsumers extends NonPersis
+             byte[] stickyKey = peekStickyKey(entry);
+             int stickyKeyHash = selector.makeStickyKeyHash(stickyKey);
+ 
+-            Consumer consumer = selector.select(stickyKeyHash);
++            Consumer consumer = selector.selectConsumer(stickyKeyHash);
+             if (consumer != null) {
+                 int startingSize = Math.max(10, entries.size() / (2 * consumerSet.size()));
+                 groupedEntries.computeIfAbsent(consumer, k -> new ArrayList<>(startingSize)).add(entry);
+diff --git a/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/persistent/PersistentStickyKeyDispatcherMultipleConsumers.java b/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/persistent/PersistentStickyKeyDispatcherMultipleConsumers.java
+index 1bcdd39..4f4c5eb 100644
+--- a/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/persistent/PersistentStickyKeyDispatcherMultipleConsumers.java
++++ b/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/persistent/PersistentStickyKeyDispatcherMultipleConsumers.java
+@@ -442,7 +442,7 @@ public class PersistentStickyKeyDispatcherMultipleConsumers extends PersistentDi
+             // check if the hash is already blocked
+             boolean hashIsAlreadyBlocked = alreadyBlockedHashes.contains(stickyKeyHash);
+             if (!hashIsAlreadyBlocked) {
+-                consumer = selector.select(stickyKeyHash);
++                consumer = selector.selectConsumer(stickyKeyHash);
+                 if (consumer != null) {
+                     if (lookAheadAllowed) {
+                         consumersForEntriesForLookaheadCheck.add(consumer);
+@@ -589,7 +589,7 @@ public class PersistentStickyKeyDispatcherMultipleConsumers extends PersistentDi
+             }
+ 
+             // find the consumer for the sticky key hash
+-            Consumer consumer = selector.select(stickyKeyHash.intValue());
++            Consumer consumer = selector.selectConsumer(stickyKeyHash.intValue());
+             // skip replaying the message position if there's no assigned consumer
+             if (consumer == null) {
+                 blockStickyKeyHashIfOrderingRequired(stickyKeyHash);
+diff --git a/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/persistent/PersistentStickyKeyDispatcherMultipleConsumersClassic.java b/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/persistent/PersistentStickyKeyDispatcherMultipleConsumersClassic.java
+index e957ce0..a382c7c 100644
+--- a/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/persistent/PersistentStickyKeyDispatcherMultipleConsumersClassic.java
++++ b/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/persistent/PersistentStickyKeyDispatcherMultipleConsumersClassic.java
+@@ -325,7 +325,7 @@ public class PersistentStickyKeyDispatcherMultipleConsumersClassic
+ 
+         for (Entry entry : entries) {
+             int stickyKeyHash = getStickyKeyHash(entry);
+-            Consumer c = selector.select(stickyKeyHash);
++            Consumer c = selector.selectConsumer(stickyKeyHash);
+             if (c != null) {
+                 groupedEntries.computeIfAbsent(c, k -> new ArrayList<>()).add(entry);
+                 consumerStickyKeyHashesMap.computeIfAbsent(c, k -> new HashSet<>()).add(stickyKeyHash);
+@@ -563,7 +563,7 @@ public class PersistentStickyKeyDispatcherMultipleConsumersClassic
+                 res.add(pos);
+                 continue;
+             }
+-            Consumer c = selector.select(stickyKeyHash.intValue());
++            Consumer c = selector.selectConsumer(stickyKeyHash.intValue());
+             if (c == null) {
+                 // Maybe using HashRangeExclusiveStickyKeyConsumerSelector.
+                 continue;

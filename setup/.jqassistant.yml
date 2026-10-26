@@ -1,0 +1,27 @@
+jqassistant:
+  store:
+    uri: bolt://localhost:7687
+    remote:
+      username: neo4j
+      password: pulsar-test-pw
+  scan:
+    reset: true
+    include:
+      files:
+        - jars
+  analyze:
+    concepts:
+      - java:MethodOverrides
+      - java:MethodOverridesByGenericParameterBinding
+      - java:MethodOverridesByRawSignature
+      - java:MethodOverloads
+      - java:MemberInheritedFrom
+      - java:PackageDependency
+      - java:ArtifactDependency
+      - java:InnerType
+      - java:AnonymousInnerType
+      - java:Deprecated
+      - java:FunctionalInterface
+      - java:DefaultMethod
+    report:
+      continue-on-failure: true

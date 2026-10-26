@@ -1,0 +1,6 @@
+pulsar/
+worktrees/
+setup/cli/
+setup/*.zip
+setup/jars/
+setup/jqassistant/

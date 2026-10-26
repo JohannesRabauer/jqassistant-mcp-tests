@@ -1,0 +1,1959 @@
+diff --git a/managed-ledger/src/main/java/org/apache/bookkeeper/mledger/Position.java b/managed-ledger/src/main/java/org/apache/bookkeeper/mledger/Position.java
+index d0d6d86..0f8d5dd 100644
+--- a/managed-ledger/src/main/java/org/apache/bookkeeper/mledger/Position.java
++++ b/managed-ledger/src/main/java/org/apache/bookkeeper/mledger/Position.java
+@@ -33,7 +33,7 @@ public interface Position extends Comparable<Position> {
+      *
+      * @return the ledger id
+      */
+-    long getLedgerId();
++    long getLedger();
+ 
+     /**
+      * Get the entry id of the entry pointed by this position.
+@@ -51,8 +51,8 @@ public interface Position extends Comparable<Position> {
+      * the other.
+      */
+     default int compareTo(Position that) {
+-        if (getLedgerId() != that.getLedgerId()) {
+-            return Long.compare(getLedgerId(), that.getLedgerId());
++        if (getLedger() != that.getLedger()) {
++            return Long.compare(getLedger(), that.getLedger());
+         }
+ 
+         return Long.compare(getEntryId(), that.getEntryId());
+@@ -66,8 +66,8 @@ public interface Position extends Comparable<Position> {
+      * the other.
+      */
+     default int compareTo(long ledgerId, long entryId) {
+-        if (getLedgerId() != ledgerId) {
+-            return Long.compare(getLedgerId(), ledgerId);
++        if (getLedger() != ledgerId) {
++            return Long.compare(getLedger(), ledgerId);
+         }
+ 
+         return Long.compare(getEntryId(), entryId);
+@@ -79,7 +79,7 @@ public interface Position extends Comparable<Position> {
+      * @return hash code
+      */
+     default int hashCodeForPosition() {
+-        int result = Long.hashCode(getLedgerId());
++        int result = Long.hashCode(getLedger());
+         result = 31 * result + Long.hashCode(getEntryId());
+         return result;
+     }
+@@ -92,9 +92,9 @@ public interface Position extends Comparable<Position> {
+      */
+     default Position getNext() {
+         if (getEntryId() < 0) {
+-            return PositionFactory.create(getLedgerId(), 0);
++            return PositionFactory.create(getLedger(), 0);
+         } else {
+-            return PositionFactory.create(getLedgerId(), getEntryId() + 1);
++            return PositionFactory.create(getLedger(), getEntryId() + 1);
+         }
+     }
+ 
+@@ -107,9 +107,9 @@ public interface Position extends Comparable<Position> {
+             return this;
+         }
+         if (getEntryId() < 0) {
+-            return PositionFactory.create(getLedgerId(), entryNum - 1);
++            return PositionFactory.create(getLedger(), entryNum - 1);
+         } else {
+-            return PositionFactory.create(getLedgerId(), getEntryId() + entryNum);
++            return PositionFactory.create(getLedger(), getEntryId() + entryNum);
+         }
+     }
+ 
+diff --git a/managed-ledger/src/main/java/org/apache/bookkeeper/mledger/impl/AckSetPositionImpl.java b/managed-ledger/src/main/java/org/apache/bookkeeper/mledger/impl/AckSetPositionImpl.java
+index 22a99eb..538ae4a 100644
+--- a/managed-ledger/src/main/java/org/apache/bookkeeper/mledger/impl/AckSetPositionImpl.java
++++ b/managed-ledger/src/main/java/org/apache/bookkeeper/mledger/impl/AckSetPositionImpl.java
+@@ -46,7 +46,7 @@ public class AckSetPositionImpl implements Position, AckSetState {
+         this.ackSet = ackSet;
+     }
+ 
+-    public long getLedgerId() {
++    public long getLedger() {
+         return ledgerId;
+     }
+ 
+diff --git a/managed-ledger/src/main/java/org/apache/bookkeeper/mledger/impl/EntryCountEstimator.java b/managed-ledger/src/main/java/org/apache/bookkeeper/mledger/impl/EntryCountEstimator.java
+index 7ad4524..a226e99 100644
+--- a/managed-ledger/src/main/java/org/apache/bookkeeper/mledger/impl/EntryCountEstimator.java
++++ b/managed-ledger/src/main/java/org/apache/bookkeeper/mledger/impl/EntryCountEstimator.java
+@@ -99,7 +99,7 @@ class EntryCountEstimator {
+         long currentAvgSize = 0;
+         // Get a collection of ledger info starting from the read position
+         Collection<ManagedLedgerInfo.LedgerInfo> ledgersAfterReadPosition =
+-                ledgersInfo.tailMap(readPosition.getLedgerId(), true).values();
++                ledgersInfo.tailMap(readPosition.getLedger(), true).values();
+ 
+         // calculate the estimated entry count based on the remaining bytes and ledger metadata
+         for (ManagedLedgerInfo.LedgerInfo ledgerInfo : ledgersAfterReadPosition) {
+@@ -137,9 +137,9 @@ class EntryCountEstimator {
+             // If the remaining bytes are insufficient to read the full ledger, estimate the readable entries
+             // or when the read position is beyond the first entry in the ledger
+             if (remainingBytesSize < ledgerTotalSizeWithBkOverhead
+-                    || readPosition.getLedgerId() == ledgerId && readPosition.getEntryId() > 0) {
++                    || readPosition.getLedger() == ledgerId && readPosition.getEntryId() > 0) {
+                 long entryCount;
+-                if (readPosition.getLedgerId() == ledgerId && readPosition.getEntryId() > 0) {
++                if (readPosition.getLedger() == ledgerId && readPosition.getEntryId() > 0) {
+                     entryCount = Math.max(ledgerTotalEntries - readPosition.getEntryId(), 1);
+                 } else {
+                     entryCount = ledgerTotalEntries;
+@@ -160,7 +160,7 @@ class EntryCountEstimator {
+             // need to find the previous non-empty ledger to find the average size
+             if (currentAvgSize == 0) {
+                 Collection<ManagedLedgerInfo.LedgerInfo> ledgersBeforeReadPosition =
+-                        ledgersInfo.headMap(readPosition.getLedgerId(), false).descendingMap().values();
++                        ledgersInfo.headMap(readPosition.getLedger(), false).descendingMap().values();
+                 for (ManagedLedgerInfo.LedgerInfo ledgerInfo : ledgersBeforeReadPosition) {
+                     long ledgerTotalSize = ledgerInfo.getSize();
+                     long ledgerTotalEntries = ledgerInfo.getEntries();
+@@ -190,18 +190,18 @@ class EntryCountEstimator {
+         // Adjust the read position to ensure it falls within the valid range of available ledgers.
+         // This handles special cases such as EARLIEST and LATEST positions by resetting them
+         // to the first available ledger or the last active ledger, respectively.
+-        if (lastLedgerId != null && readPosition.getLedgerId() > lastLedgerId.longValue()) {
++        if (lastLedgerId != null && readPosition.getLedger() > lastLedgerId.longValue()) {
+             return PositionFactory.create(lastLedgerId, Math.max(lastLedgerTotalEntries - 1, 0));
+         }
+         long lastKey = ledgersInfo.lastKey();
+-        if (lastLedgerId == null && readPosition.getLedgerId() > lastKey) {
++        if (lastLedgerId == null && readPosition.getLedger() > lastKey) {
+             Map.Entry<Long, ManagedLedgerInfo.LedgerInfo> lastEntry = ledgersInfo.lastEntry();
+             if (lastEntry != null && lastEntry.getKey() == lastKey) {
+                 return PositionFactory.create(lastEntry.getKey(), Math.max(lastEntry.getValue().getEntries() - 1, 0));
+             }
+         }
+         long firstKey = ledgersInfo.firstKey();
+-        if (readPosition.getLedgerId() < firstKey) {
++        if (readPosition.getLedger() < firstKey) {
+             return PositionFactory.create(firstKey, 0);
+         }
+         return readPosition;
+diff --git a/managed-ledger/src/main/java/org/apache/bookkeeper/mledger/impl/EntryImpl.java b/managed-ledger/src/main/java/org/apache/bookkeeper/mledger/impl/EntryImpl.java
+index 7174e1d..d42f811 100644
+--- a/managed-ledger/src/main/java/org/apache/bookkeeper/mledger/impl/EntryImpl.java
++++ b/managed-ledger/src/main/java/org/apache/bookkeeper/mledger/impl/EntryImpl.java
+@@ -138,7 +138,7 @@ public final class EntryImpl extends AbstractCASReferenceCounted
+     public static EntryImpl create(Position position, ByteBuf data, int expectedReadCount) {
+         EntryImpl entry = RECYCLER.get();
+         entry.position = PositionFactory.create(position);
+-        entry.ledgerId = position.getLedgerId();
++        entry.ledgerId = position.getLedger();
+         entry.entryId = position.getEntryId();
+         entry.data = data;
+         entry.data.retain();
+@@ -150,7 +150,7 @@ public final class EntryImpl extends AbstractCASReferenceCounted
+     public static EntryImpl createWithRetainedDuplicate(Position position, ByteBuf data, int expectedReadCount) {
+         EntryImpl entry = RECYCLER.get();
+         entry.position = PositionFactory.create(position);
+-        entry.ledgerId = position.getLedgerId();
++        entry.ledgerId = position.getLedger();
+         entry.entryId = position.getEntryId();
+         entry.data = data.retainedDuplicate();
+         entry.readCountHandler = EntryReadCountHandlerImpl.maybeCreate(expectedReadCount);
+@@ -163,7 +163,7 @@ public final class EntryImpl extends AbstractCASReferenceCounted
+                                                         MessageMetadata messageMetadata) {
+         EntryImpl entry = RECYCLER.get();
+         entry.position = PositionFactory.create(position);
+-        entry.ledgerId = position.getLedgerId();
++        entry.ledgerId = position.getLedger();
+         entry.entryId = position.getEntryId();
+         entry.data = data.retainedDuplicate();
+         entry.readCountHandler = entryReadCountHandler;
+diff --git a/managed-ledger/src/main/java/org/apache/bookkeeper/mledger/impl/ImmutablePositionImpl.java b/managed-ledger/src/main/java/org/apache/bookkeeper/mledger/impl/ImmutablePositionImpl.java
+index 06245a6..f661ed8 100644
+--- a/managed-ledger/src/main/java/org/apache/bookkeeper/mledger/impl/ImmutablePositionImpl.java
++++ b/managed-ledger/src/main/java/org/apache/bookkeeper/mledger/impl/ImmutablePositionImpl.java
+@@ -30,11 +30,11 @@ public final class ImmutablePositionImpl implements Position {
+     }
+ 
+     public ImmutablePositionImpl(Position other) {
+-        this.ledgerId = other.getLedgerId();
++        this.ledgerId = other.getLedger();
+         this.entryId = other.getEntryId();
+     }
+ 
+-    public long getLedgerId() {
++    public long getLedger() {
+         return ledgerId;
+     }
+ 
+diff --git a/managed-ledger/src/main/java/org/apache/bookkeeper/mledger/impl/ManagedCursorImpl.java b/managed-ledger/src/main/java/org/apache/bookkeeper/mledger/impl/ManagedCursorImpl.java
+index 8aaffee..3cf7f11 100644
+--- a/managed-ledger/src/main/java/org/apache/bookkeeper/mledger/impl/ManagedCursorImpl.java
++++ b/managed-ledger/src/main/java/org/apache/bookkeeper/mledger/impl/ManagedCursorImpl.java
+@@ -200,7 +200,7 @@ public class ManagedCursorImpl implements ManagedCursor {
+     private static final LongPairConsumer<Position> positionRangeConverter = PositionFactory::create;
+ 
+     private static final RangeBoundConsumer<Position> positionRangeReverseConverter =
+-            (position) -> new LongPairRangeSet.LongPair(position.getLedgerId(), position.getEntryId());
++            (position) -> new LongPairRangeSet.LongPair(position.getLedger(), position.getEntryId());
+ 
+     private static final LongPairConsumer<PositionRecyclable> recyclePositionRangeConverter = PositionRecyclable::get;
+     protected final RangeSetWrapper<Position> individualDeletedMessages;
+@@ -261,7 +261,7 @@ public class ManagedCursorImpl implements ManagedCursor {
+                 alignAcknowledgeStatusAfterPersisted = () -> {
+                     if (batchDeletedIndexes != null) {
+                         batchDeletedIndexes.subMap(PositionFactory.EARLIEST,
+-                                false, PositionFactory.create(newPosition.getLedgerId(),
++                                false, PositionFactory.create(newPosition.getLedger(),
+                                         newPosition.getEntryId()), true).clear();
+                     }
+                     persistentMarkDeletePosition = newPosition;
+@@ -718,8 +718,8 @@ public class ManagedCursorImpl implements ManagedCursor {
+                             getConfig().isPersistentUnackedRangesWithMultipleEntriesEnabled());
+                     rangeSetWrapperV2.build(rangeMap);
+                     rangeSetWrapperV2.forEach(range -> {
+-                        individualDeletedMessages.addOpenClosed(range.lowerEndpoint().getLedgerId(),
+-                                range.lowerEndpoint().getEntryId(), range.upperEndpoint().getLedgerId(),
++                        individualDeletedMessages.addOpenClosed(range.lowerEndpoint().getLedger(),
++                                range.lowerEndpoint().getEntryId(), range.upperEndpoint().getLedger(),
+                                 range.upperEndpoint().getEntryId());
+                         return true;
+                     });
+@@ -777,28 +777,28 @@ public class ManagedCursorImpl implements ManagedCursor {
+                 NestedPositionInfo lowerEndpoint = messageRange.getLowerEndpoint();
+                 NestedPositionInfo upperEndpoint = messageRange.getUpperEndpoint();
+ 
+-                if (lowerEndpoint.getLedgerId() == upperEndpoint.getLedgerId()) {
+-                    individualDeletedMessages.addOpenClosed(lowerEndpoint.getLedgerId(), lowerEndpoint.getEntryId(),
+-                            upperEndpoint.getLedgerId(), upperEndpoint.getEntryId());
++                if (lowerEndpoint.getLedger() == upperEndpoint.getLedger()) {
++                    individualDeletedMessages.addOpenClosed(lowerEndpoint.getLedger(), lowerEndpoint.getEntryId(),
++                            upperEndpoint.getLedger(), upperEndpoint.getEntryId());
+                 } else {
+                     // Store message ranges after splitting them by ledger ID
+-                    LedgerInfo lowerEndpointLedgerInfo = ledger.getLedgersInfo().get(lowerEndpoint.getLedgerId());
++                    LedgerInfo lowerEndpointLedgerInfo = ledger.getLedgersInfo().get(lowerEndpoint.getLedger());
+                     if (lowerEndpointLedgerInfo != null) {
+-                        individualDeletedMessages.addOpenClosed(lowerEndpoint.getLedgerId(), lowerEndpoint.getEntryId(),
+-                                lowerEndpoint.getLedgerId(), lowerEndpointLedgerInfo.getEntries() - 1);
++                        individualDeletedMessages.addOpenClosed(lowerEndpoint.getLedger(), lowerEndpoint.getEntryId(),
++                                lowerEndpoint.getLedger(), lowerEndpointLedgerInfo.getEntries() - 1);
+                     } else {
+                         log.warn("[{}][{}] No ledger info of lower endpoint {}:{}", ledger.getName(), name,
+-                                lowerEndpoint.getLedgerId(), lowerEndpoint.getEntryId());
++                                lowerEndpoint.getLedger(), lowerEndpoint.getEntryId());
+                     }
+ 
+                     for (LedgerInfo li : ledger.getLedgersInfo()
+-                            .subMap(lowerEndpoint.getLedgerId(), false, upperEndpoint.getLedgerId(), false).values()) {
++                            .subMap(lowerEndpoint.getLedger(), false, upperEndpoint.getLedger(), false).values()) {
+                         individualDeletedMessages.addOpenClosed(li.getLedgerId(), -1, li.getLedgerId(),
+                                 li.getEntries() - 1);
+                     }
+ 
+-                    individualDeletedMessages.addOpenClosed(upperEndpoint.getLedgerId(), -1,
+-                            upperEndpoint.getLedgerId(), upperEndpoint.getEntryId());
++                    individualDeletedMessages.addOpenClosed(upperEndpoint.getLedger(), -1,
++                            upperEndpoint.getLedger(), upperEndpoint.getEntryId());
+                 }
+             }
+         } finally {
+@@ -833,8 +833,8 @@ public class ManagedCursorImpl implements ManagedCursor {
+                                  LedgerHandle recoveredFromCursorLedger) {
+         // if the position was at a ledger that didn't exist (since it will be deleted if it was previously empty),
+         // we need to move to the next existing ledger
+-        if (position.getEntryId() == -1L && !ledger.ledgerExists(position.getLedgerId())) {
+-            Long nextExistingLedger = ledger.getNextValidLedger(position.getLedgerId());
++        if (position.getEntryId() == -1L && !ledger.ledgerExists(position.getLedger())) {
++            Long nextExistingLedger = ledger.getNextValidLedger(position.getLedger());
+             if (nextExistingLedger == null) {
+                 log.info("[{}] [{}] Couldn't find next next valid ledger for recovery {}", ledger.getName(), name,
+                         position);
+@@ -1316,7 +1316,7 @@ public class ManagedCursorImpl implements ManagedCursor {
+             return 0;
+         }
+         if (markDeletePosition.compareTo(lastPosition) > 0) {
+-            if (!ledger.ledgerExists(lastPosition.getLedgerId())
++            if (!ledger.ledgerExists(lastPosition.getLedger())
+                     || isMarkDeletePositionAtStartOfCurrentLedger(markDeletePosition)) {
+                 return 0;
+             }
+@@ -1341,8 +1341,8 @@ public class ManagedCursorImpl implements ManagedCursor {
+ 
+             if (getConfig().isUnackedRangesOpenCacheSetEnabled()) {
+                 deletedCount = individualDeletedMessages.cardinality(
+-                        backlogRange.lowerEndpoint().getLedgerId(), backlogRange.lowerEndpoint().getEntryId(),
+-                        backlogRange.upperEndpoint().getLedgerId(), backlogRange.upperEndpoint().getEntryId());
++                        backlogRange.lowerEndpoint().getLedger(), backlogRange.lowerEndpoint().getEntryId(),
++                        backlogRange.upperEndpoint().getLedger(), backlogRange.upperEndpoint().getEntryId());
+             } else {
+                 AtomicLong deletedCounter = new AtomicLong(0);
+                 individualDeletedMessages.forEach((r) -> {
+@@ -1396,7 +1396,7 @@ public class ManagedCursorImpl implements ManagedCursor {
+         // currentLedgerEntries includes pending adds, so it cannot identify this state.
+         LedgerHandle currentLedger = ledger.currentLedger;
+         return currentLedger != null
+-                && markDeletePosition.getLedgerId() == currentLedger.getId()
++                && markDeletePosition.getLedger() == currentLedger.getId()
+                 && markDeletePosition.getEntryId() == -1;
+     }
+ 
+@@ -1637,7 +1637,7 @@ public class ManagedCursorImpl implements ManagedCursor {
+                 long entries = getNumberOfEntries(Range.openClosed(markDeletePosition, newMarkDeletePosition));
+                 MSG_CONSUMED_COUNTER_UPDATER.addAndGet(ManagedCursorImpl.this, entries);
+             }
+-            individualDeletedMessages.removeAtMost(newMarkDeletePosition.getLedgerId(),
++            individualDeletedMessages.removeAtMost(newMarkDeletePosition.getLedger(),
+                     newMarkDeletePosition.getEntryId());
+ 
+             // Entries already acknowledged, which is larger than the new mark deleted position.
+@@ -1922,8 +1922,8 @@ public class ManagedCursorImpl implements ManagedCursor {
+         try {
+             if (getConfig().isUnackedRangesOpenCacheSetEnabled()) {
+                 int cardinality = individualDeletedMessages.cardinality(
+-                        range.lowerEndpoint().getLedgerId(), range.lowerEndpoint().getEntryId(),
+-                        range.upperEndpoint().getLedgerId(), range.upperEndpoint().getEntryId());
++                        range.lowerEndpoint().getLedger(), range.lowerEndpoint().getEntryId(),
++                        range.upperEndpoint().getLedger(), range.upperEndpoint().getEntryId());
+                 deletedEntries.addAndGet(cardinality);
+             } else {
+                 individualDeletedMessages.forEach((r) -> {
+@@ -2201,10 +2201,10 @@ public class ManagedCursorImpl implements ManagedCursor {
+ 
+         if (!newMarkDeletePosition.equals(oldMarkDeletePosition)) {
+             long skippedEntries = 0;
+-            if (newMarkDeletePosition.getLedgerId() == oldMarkDeletePosition.getLedgerId()
++            if (newMarkDeletePosition.getLedger() == oldMarkDeletePosition.getLedger()
+                     && newMarkDeletePosition.getEntryId() == oldMarkDeletePosition.getEntryId() + 1) {
+                 // Mark-deleting the position next to current one
+-                skippedEntries = individualDeletedMessages.contains(newMarkDeletePosition.getLedgerId(),
++                skippedEntries = individualDeletedMessages.contains(newMarkDeletePosition.getLedger(),
+                         newMarkDeletePosition.getEntryId()) ? 0 : 1;
+             } else {
+                 skippedEntries = getNumberOfEntries(Range.openClosed(oldMarkDeletePosition, newMarkDeletePosition));
+@@ -2215,10 +2215,10 @@ public class ManagedCursorImpl implements ManagedCursor {
+             // eg: (2:10..3:15] can be returned as (2:10..2:15],[3:0..3:15]. So, try to iterate over connected range and
+             // found the last non-connected range which gives new markDeletePosition
+             while (positionAfterNewMarkDelete.compareTo(ledger.lastConfirmedEntry) <= 0) {
+-                if (individualDeletedMessages.contains(positionAfterNewMarkDelete.getLedgerId(),
++                if (individualDeletedMessages.contains(positionAfterNewMarkDelete.getLedger(),
+                         positionAfterNewMarkDelete.getEntryId())) {
+                     Range<Position> rangeToBeMarkDeleted = individualDeletedMessages.rangeContaining(
+-                            positionAfterNewMarkDelete.getLedgerId(), positionAfterNewMarkDelete.getEntryId());
++                            positionAfterNewMarkDelete.getLedger(), positionAfterNewMarkDelete.getEntryId());
+                     newMarkDeletePosition = rangeToBeMarkDeleted.upperEndpoint();
+                     positionAfterNewMarkDelete = ledger.getNextValidPosition(newMarkDeletePosition);
+                     // check if next valid position is also deleted and part of the deleted-range
+@@ -2236,7 +2236,7 @@ public class ManagedCursorImpl implements ManagedCursor {
+ 
+         // markDelete-position and clear out deletedMsgSet
+         markDeletePosition = newMarkDeletePosition;
+-        individualDeletedMessages.removeAtMost(markDeletePosition.getLedgerId(), markDeletePosition.getEntryId());
++        individualDeletedMessages.removeAtMost(markDeletePosition.getLedger(), markDeletePosition.getEntryId());
+ 
+         MutableBoolean readPositionUpdated = new MutableBoolean(false);
+         Position updatedReadPosition = READ_POSITION_UPDATER.updateAndGet(this, currentReadPosition -> {
+@@ -2306,11 +2306,11 @@ public class ManagedCursorImpl implements ManagedCursor {
+         if (lastConfirmedEntry.compareTo(newPosition) < 0) {
+             boolean shouldCursorMoveForward = false;
+             try {
+-                long ledgerEntries = ledger.getLedgerInfo(markDeletePos.getLedgerId()).get().getEntries();
+-                Long nextValidLedger = ledger.getNextValidLedger(lastConfirmedEntry.getLedgerId());
++                long ledgerEntries = ledger.getLedgerInfo(markDeletePos.getLedger()).get().getEntries();
++                Long nextValidLedger = ledger.getNextValidLedger(lastConfirmedEntry.getLedger());
+                 shouldCursorMoveForward = nextValidLedger != null
+                         && (markDeletePos.getEntryId() + 1 >= ledgerEntries)
+-                        && (newPosition.getLedgerId() == nextValidLedger);
++                        && (newPosition.getLedger() == nextValidLedger);
+             } catch (Exception e) {
+                 log.warn("Failed to get ledger entries while setting mark-delete-position", e);
+             }
+@@ -2633,12 +2633,12 @@ public class ManagedCursorImpl implements ManagedCursor {
+                     // multi ledgers, so the first position's entryId maybe "-1".
+                     Position previousPosition;
+                     if (position.getEntryId() == 0) {
+-                        previousPosition = PositionFactory.create(position.getLedgerId(), -1);
++                        previousPosition = PositionFactory.create(position.getLedger(), -1);
+                     } else {
+                         previousPosition = ledger.getPreviousPosition(position);
+                     }
+-                    individualDeletedMessages.addOpenClosed(previousPosition.getLedgerId(),
+-                        previousPosition.getEntryId(), position.getLedgerId(), position.getEntryId());
++                    individualDeletedMessages.addOpenClosed(previousPosition.getLedger(),
++                        previousPosition.getEntryId(), position.getLedger(), position.getEntryId());
+                     MSG_CONSUMED_COUNTER_UPDATER.incrementAndGet(this);
+ 
+                     if (log.isDebugEnabled()) {
+@@ -2653,9 +2653,9 @@ public class ManagedCursorImpl implements ManagedCursor {
+                     }
+                     if (bitSet.isEmpty()) {
+                         Position previousPosition = ledger.getPreviousPosition(position);
+-                        individualDeletedMessages.addOpenClosed(previousPosition.getLedgerId(),
++                        individualDeletedMessages.addOpenClosed(previousPosition.getLedger(),
+                             previousPosition.getEntryId(),
+-                            position.getLedgerId(), position.getEntryId());
++                            position.getLedger(), position.getEntryId());
+                         MSG_CONSUMED_COUNTER_UPDATER.incrementAndGet(this);
+                         batchDeletedIndexes.remove(position);
+                     }
+@@ -2675,7 +2675,7 @@ public class ManagedCursorImpl implements ManagedCursor {
+             // If the upper bound is before the mark-delete position, we need to move ahead as these
+             // individualDeletedMessages are now irrelevant
+             if (range.upperEndpoint().compareTo(markDeletePosition) <= 0) {
+-                individualDeletedMessages.removeAtMost(markDeletePosition.getLedgerId(),
++                individualDeletedMessages.removeAtMost(markDeletePosition.getLedger(),
+                         markDeletePosition.getEntryId());
+                 range = individualDeletedMessages.firstRange();
+             }
+@@ -3012,7 +3012,7 @@ public class ManagedCursorImpl implements ManagedCursor {
+         // hence we write it as -1. The cursor ledger is deleted once the z-node write is confirmed.
+         ManagedCursorInfo info = new ManagedCursorInfo()
+                 .setCursorsLedgerId(cursorsLedgerId)
+-                .setMarkDeleteLedgerId(position.getLedgerId())
++                .setMarkDeleteLedgerId(position.getLedger())
+                 .setMarkDeleteEntryId(position.getEntryId())
+                 .setLastActive(lastActive);
+ 
+@@ -3184,14 +3184,14 @@ public class ManagedCursorImpl implements ManagedCursor {
+      * - If there is a consumer ack request after this event, it will also work.
+      */
+     public void skipNonRecoverableEntries(Position startPosition, Position endPosition){
+-        long ledgerId = startPosition.getLedgerId();
++        long ledgerId = startPosition.getLedger();
+         LedgerInfo ledgerInfo = ledger.getLedgersInfo().get(ledgerId);
+         if (ledgerInfo == null) {
+             return;
+         }
+ 
+         long startEntryId = Math.max(0, startPosition.getEntryId());
+-        long endEntryId = ledgerId != endPosition.getLedgerId() ? ledgerInfo.getEntries() : endPosition.getEntryId();
++        long endEntryId = ledgerId != endPosition.getLedger() ? ledgerInfo.getEntries() : endPosition.getEntryId();
+         if (startEntryId >= endEntryId) {
+             return;
+         }
+@@ -3456,7 +3456,7 @@ public class ManagedCursorImpl implements ManagedCursor {
+                 final var entry = iterator.next();
+                 BatchedEntryDeletionIndexInfo batchDeletedIndexInfo = new BatchedEntryDeletionIndexInfo();
+                 batchDeletedIndexInfo.setPosition()
+-                        .setLedgerId(entry.getKey().getLedgerId())
++                        .setLedgerId(entry.getKey().getLedger())
+                         .setEntryId(entry.getKey().getEntryId());
+                 long[] array = entry.getValue().toLongArray();
+                 for (long l : array) {
+@@ -3475,7 +3475,7 @@ public class ManagedCursorImpl implements ManagedCursor {
+         Position position = mdEntry.newPosition;
+         PositionInfo pi = reusablePositionInfo;
+         pi.clear();
+-        pi.setLedgerId(position.getLedgerId())
++        pi.setLedgerId(position.getLedger())
+                 .setEntryId(position.getEntryId())
+                 .addAllBatchedEntryDeletionIndexInfos(buildBatchEntryDeletionIndexInfoList())
+                 .addAllProperties(buildPropertiesMap(mdEntry.properties));
+@@ -3930,7 +3930,7 @@ public class ManagedCursorImpl implements ManagedCursor {
+     // it avoids unnecessary lock nesting.
+     private boolean internalIsMessageDeleted(Position position) {
+         return position.compareTo(markDeletePosition) <= 0
+-                || individualDeletedMessages.contains(position.getLedgerId(), position.getEntryId());
++                || individualDeletedMessages.contains(position.getLedger(), position.getEntryId());
+     }
+ 
+     //this method will return a copy of the position's ack set
+@@ -3958,7 +3958,7 @@ public class ManagedCursorImpl implements ManagedCursor {
+     public Position getNextAvailablePosition(Position position) {
+         lock.readLock().lock();
+         try {
+-            Range<Position> range = individualDeletedMessages.rangeContaining(position.getLedgerId(),
++            Range<Position> range = individualDeletedMessages.rangeContaining(position.getLedger(),
+                     position.getEntryId());
+             if (range != null) {
+                 Position nextPosition = range.upperEndpoint().getNext();
+@@ -4150,9 +4150,9 @@ public class ManagedCursorImpl implements ManagedCursor {
+             if (individualDeletedMessages != null) {
+                 this.individualDeletedMessages.forEach(range -> {
+                     newNonDurableCursor.individualDeletedMessages.addOpenClosed(
+-                            range.lowerEndpoint().getLedgerId(),
++                            range.lowerEndpoint().getLedger(),
+                             range.lowerEndpoint().getEntryId(),
+-                            range.upperEndpoint().getLedgerId(),
++                            range.upperEndpoint().getLedger(),
+                             range.upperEndpoint().getEntryId());
+                     return true;
+                 });
+diff --git a/managed-ledger/src/main/java/org/apache/bookkeeper/mledger/impl/ManagedLedgerFactoryImpl.java b/managed-ledger/src/main/java/org/apache/bookkeeper/mledger/impl/ManagedLedgerFactoryImpl.java
+index f5f13c2..e019d1e 100644
+--- a/managed-ledger/src/main/java/org/apache/bookkeeper/mledger/impl/ManagedLedgerFactoryImpl.java
++++ b/managed-ledger/src/main/java/org/apache/bookkeeper/mledger/impl/ManagedLedgerFactoryImpl.java
+@@ -1554,7 +1554,7 @@ public class ManagedLedgerFactoryImpl implements ManagedLedgerFactory {
+         Position toPosition = range.upperEndpoint();
+         boolean toIncluded = range.upperBoundType() == BoundType.CLOSED;
+ 
+-        if (fromPosition.getLedgerId() == toPosition.getLedgerId()) {
++        if (fromPosition.getLedger() == toPosition.getLedger()) {
+             // If the 2 positions are in the same ledger
+             long count = toPosition.getEntryId() - fromPosition.getEntryId() - 1;
+             count += fromIncluded ? 1 : 0;
+@@ -1568,7 +1568,7 @@ public class ManagedLedgerFactoryImpl implements ManagedLedgerFactory {
+             count += toIncluded ? 1 : 0;
+ 
+             // 2. Add the entries in the ledger pointed by fromPosition
+-            LedgerInfo li = ledgers.get(fromPosition.getLedgerId());
++            LedgerInfo li = ledgers.get(fromPosition.getLedger());
+             if (li != null) {
+                 count += li.getEntries() - (fromPosition.getEntryId() + 1);
+                 count += fromIncluded ? 1 : 0;
+@@ -1576,7 +1576,7 @@ public class ManagedLedgerFactoryImpl implements ManagedLedgerFactory {
+ 
+             // 3. Add the whole ledgers entries in between
+             for (LedgerInfo ls : ledgers
+-                    .subMap(fromPosition.getLedgerId(), false, toPosition.getLedgerId(), false).values()) {
++                    .subMap(fromPosition.getLedger(), false, toPosition.getLedger(), false).values()) {
+                 count += ls.getEntries();
+             }
+ 
+diff --git a/managed-ledger/src/main/java/org/apache/bookkeeper/mledger/impl/ManagedLedgerImpl.java b/managed-ledger/src/main/java/org/apache/bookkeeper/mledger/impl/ManagedLedgerImpl.java
+index c0a04e7..9e4f297 100644
+--- a/managed-ledger/src/main/java/org/apache/bookkeeper/mledger/impl/ManagedLedgerImpl.java
++++ b/managed-ledger/src/main/java/org/apache/bookkeeper/mledger/impl/ManagedLedgerImpl.java
+@@ -442,7 +442,7 @@ public class ManagedLedgerImpl implements ManagedLedger, CreateCallback {
+                     state = State.Terminated;
+                     NestedPositionInfo terminatedPosition = mlInfo.getTerminatedPosition();
+                     lastConfirmedEntry =
+-                            PositionFactory.create(terminatedPosition.getLedgerId(), terminatedPosition.getEntryId());
++                            PositionFactory.create(terminatedPosition.getLedger(), terminatedPosition.getEntryId());
+                     log.info("[{}] Recovering managed ledger terminated at {}", name, lastConfirmedEntry);
+                 }
+                 for (int i = 0; i < mlInfo.getLedgerInfosCount(); i++) {
+@@ -643,7 +643,7 @@ public class ManagedLedgerImpl implements ManagedLedger, CreateCallback {
+                 lastConfirmedEntry = PositionFactory.create(lh.getId(), -1);
+                 // bypass empty ledgers, find last ledger with Message if possible.
+                 while (lastConfirmedEntry.getEntryId() == -1) {
+-                    Map.Entry<Long, LedgerInfo> formerLedger = ledgers.lowerEntry(lastConfirmedEntry.getLedgerId());
++                    Map.Entry<Long, LedgerInfo> formerLedger = ledgers.lowerEntry(lastConfirmedEntry.getLedger());
+                     if (formerLedger != null) {
+                         LedgerInfo ledgerInfo = formerLedger.getValue();
+                         lastConfirmedEntry =
+@@ -1292,7 +1292,7 @@ public class ManagedLedgerImpl implements ManagedLedger, CreateCallback {
+                 return 0;
+             }
+             long size = 0;
+-            final long slowestConsumerLedgerId = pos.getLedgerId();
++            final long slowestConsumerLedgerId = pos.getLedger();
+ 
+             // Subtract size of ledgers that were already fully consumed but not trimmed yet
+             synchronized (this) {
+@@ -1303,7 +1303,7 @@ public class ManagedLedgerImpl implements ManagedLedger, CreateCallback {
+ 
+             LedgerInfo ledgerInfo = null;
+             synchronized (this) {
+-                ledgerInfo = ledgers.get(pos.getLedgerId());
++                ledgerInfo = ledgers.get(pos.getLedger());
+             }
+             if (ledgerInfo == null) {
+                 // ledger was removed
+@@ -1388,13 +1388,13 @@ public class ManagedLedgerImpl implements ManagedLedger, CreateCallback {
+ 
+     long estimateBacklogFromPosition(Position pos) {
+         synchronized (this) {
+-            long sizeBeforePosLedger = ledgers.headMap(pos.getLedgerId()).values()
++            long sizeBeforePosLedger = ledgers.headMap(pos.getLedger()).values()
+                     .stream().mapToLong(LedgerInfo::getSize).sum();
+-            LedgerInfo ledgerInfo = ledgers.get(pos.getLedgerId());
++            LedgerInfo ledgerInfo = ledgers.get(pos.getLedger());
+             long sizeAfter = getTotalSize() - sizeBeforePosLedger;
+             if (ledgerInfo == null) {
+                 return sizeAfter;
+-            } else if (pos.getLedgerId() == currentLedger.getId()) {
++            } else if (pos.getLedger() == currentLedger.getId()) {
+                 return sizeAfter - consumedLedgerSize(currentLedgerSize, currentLedgerEntries, pos.getEntryId());
+             } else {
+                 return sizeAfter - consumedLedgerSize(ledgerInfo.getSize(), ledgerInfo.getEntries(), pos.getEntryId());
+@@ -2221,7 +2221,7 @@ public class ManagedLedgerImpl implements ManagedLedger, CreateCallback {
+             return;
+         }
+ 
+-        long ledgerId = opReadEntry.readPosition.getLedgerId();
++        long ledgerId = opReadEntry.readPosition.getLedger();
+ 
+         LedgerHandle currentLedger = this.currentLedger;
+ 
+@@ -2235,7 +2235,7 @@ public class ManagedLedgerImpl implements ManagedLedger, CreateCallback {
+             if (ledgerInfo == null || ledgerInfo.getEntries() == 0) {
+                 // Cursor is pointing to an empty ledger, there's no need to try opening it. Skip this ledger and
+                 // move to the next one
+-                opReadEntry.updateReadPosition(PositionFactory.create(opReadEntry.readPosition.getLedgerId() + 1, 0));
++                opReadEntry.updateReadPosition(PositionFactory.create(opReadEntry.readPosition.getLedger() + 1, 0));
+                 opReadEntry.checkReadCompletion();
+                 return;
+             }
+@@ -2286,15 +2286,15 @@ public class ManagedLedgerImpl implements ManagedLedger, CreateCallback {
+         }
+ 
+         // If the mark delete position is in a later ledger, then this ledger is fully acknowledged
+-        if (markDeletedPosition.getLedgerId() > ledgerId) {
++        if (markDeletedPosition.getLedger() > ledgerId) {
+             return true;
+         }
+ 
+         // Check if all entries in this ledger are individually deleted
+-        if (markDeletedPosition.getLedgerId() <= ledgerId) {
++        if (markDeletedPosition.getLedger() <= ledgerId) {
+             final long lastEntryInLedger = ledgerInfo.getEntries() - 1;
+             Position startPosition = PositionFactory.create(ledgerId, 0);
+-            if (markDeletedPosition.getLedgerId() == ledgerId) {
++            if (markDeletedPosition.getLedger() == ledgerId) {
+                 // The mark delete position represents the last acknowledged entry
+                 // If it points to the last entry in the ledger, then the ledger is fully acknowledged
+                 if (markDeletedPosition.getEntryId() >= lastEntryInLedger) {
+@@ -2446,12 +2446,12 @@ public class ManagedLedgerImpl implements ManagedLedger, CreateCallback {
+     public void asyncReadEntry(Position position, ReadEntryCallback callback, Object ctx) {
+         LedgerHandle currentLedger = this.currentLedger;
+         if (log.isDebugEnabled()) {
+-            log.debug("[{}] Reading entry ledger {}: {}", name, position.getLedgerId(), position.getEntryId());
++            log.debug("[{}] Reading entry ledger {}: {}", name, position.getLedger(), position.getEntryId());
+         }
+-        if (position.getLedgerId() == currentLedger.getId()) {
++        if (position.getLedger() == currentLedger.getId()) {
+             asyncReadEntry(currentLedger, position, callback, ctx);
+-        } else if (ledgers.containsKey(position.getLedgerId())) {
+-            getLedgerHandle(position.getLedgerId()).thenAccept(ledger -> asyncReadEntry(ledger, position, callback,
++        } else if (ledgers.containsKey(position.getLedger())) {
++            getLedgerHandle(position.getLedger()).thenAccept(ledger -> asyncReadEntry(ledger, position, callback,
+                     ctx)).exceptionally(ex -> {
+                 log.error("[{}] Error opening ledger for reading at position {} - {}", name, position, ex.getMessage());
+                 callback.readEntryFailed(ManagedLedgerException.getManagedLedgerException(ex.getCause()), ctx);
+@@ -2459,7 +2459,7 @@ public class ManagedLedgerImpl implements ManagedLedger, CreateCallback {
+             });
+         } else {
+             log.error("[{}] Failed to get message with ledger {}:{} the ledgerId does not belong to this topic "
+-                    + "or has been deleted.", name, position.getLedgerId(), position.getEntryId());
++                    + "or has been deleted.", name, position.getLedger(), position.getEntryId());
+             callback.readEntryFailed(new LedgerNotExistException("Message not found, "
+                     + "the ledgerId does not belong to this topic or has been deleted"), ctx);
+         }
+@@ -2478,7 +2478,7 @@ public class ManagedLedgerImpl implements ManagedLedger, CreateCallback {
+ 
+         Position lastPosition = lastConfirmedEntry;
+ 
+-        if (ledger.getId() == lastPosition.getLedgerId()) {
++        if (ledger.getId() == lastPosition.getLedger()) {
+             // For the current ledger, we only give read visibility to the last entry we have received a confirmation in
+             // the managed ledger layer
+             lastEntryInLedger = lastPosition.getEntryId();
+@@ -2488,7 +2488,7 @@ public class ManagedLedgerImpl implements ManagedLedger, CreateCallback {
+         }
+ 
+         // can read max position entryId
+-        if (ledger.getId() == opReadEntry.maxPosition.getLedgerId()) {
++        if (ledger.getId() == opReadEntry.maxPosition.getLedger()) {
+             lastEntryInLedger = min(opReadEntry.maxPosition.getEntryId(), lastEntryInLedger);
+         }
+ 
+@@ -2565,7 +2565,7 @@ public class ManagedLedgerImpl implements ManagedLedger, CreateCallback {
+             // set readOpCount to uniquely validate if ReadEntryCallbackWrapper is already recycled
+             long readOpCount = READ_OP_COUNT_UPDATER.incrementAndGet(this);
+             long createdTime = System.nanoTime();
+-            ReadEntryCallbackWrapper readCallback = ReadEntryCallbackWrapper.create(name, position.getLedgerId(),
++            ReadEntryCallbackWrapper readCallback = ReadEntryCallbackWrapper.create(name, position.getLedger(),
+                     position.getEntryId(), callback, readOpCount, createdTime, ctx);
+             lastReadCallback = readCallback;
+             entryCache.asyncReadEntry(ledger, position, readCallback, readOpCount);
+@@ -2801,7 +2801,7 @@ public class ManagedLedgerImpl implements ManagedLedger, CreateCallback {
+         }
+ 
+         // Only trigger a trimming when switching to the next ledger
+-        if (previousSlowestReader.getLedgerId() != newPosition.getLedgerId()) {
++        if (previousSlowestReader.getLedger() != newPosition.getLedger()) {
+             trimConsumedLedgersInBackground();
+         }
+     }
+@@ -2824,8 +2824,8 @@ public class ManagedLedgerImpl implements ManagedLedger, CreateCallback {
+     }
+ 
+     Position startReadOperationOnLedger(Position position) {
+-        Long ledgerId = ledgers.ceilingKey(position.getLedgerId());
+-        if (ledgerId != null && ledgerId != position.getLedgerId()) {
++        Long ledgerId = ledgers.ceilingKey(position.getLedger());
++        if (ledgerId != null && ledgerId != position.getLedger()) {
+             // The ledger pointed by this position does not exist anymore. It was deleted because it was empty. We need
+             // to skip on the next available ledger
+             position = PositionFactory.create(ledgerId, 0);
+@@ -2869,8 +2869,8 @@ public class ManagedLedgerImpl implements ManagedLedger, CreateCallback {
+             // Snapshot positions into a local variables to avoid race condition.
+             Position markDeletedPosition = cursor.getMarkDeletedPosition();
+             Position lastAckedPosition = markDeletedPosition;
+-            LedgerInfo curPointedLedger   = ledgers.get(lastAckedPosition.getLedgerId());
+-            LedgerInfo nextPointedLedger = Optional.ofNullable(ledgers.higherEntry(lastAckedPosition.getLedgerId()))
++            LedgerInfo curPointedLedger   = ledgers.get(lastAckedPosition.getLedger());
++            LedgerInfo nextPointedLedger = Optional.ofNullable(ledgers.higherEntry(lastAckedPosition.getLedger()))
+                     .map(Map.Entry::getValue).orElse(null);
+ 
+             if (curPointedLedger != null) {
+@@ -3223,7 +3223,7 @@ public class ManagedLedgerImpl implements ManagedLedger, CreateCallback {
+ 
+             long slowestReaderLedgerId = -1;
+             final LazyLoadableValue<Long> slowestNonDurationLedgerId =
+-                    new LazyLoadableValue(() -> getTheSlowestNonDurationReadPosition().getLedgerId());
++                    new LazyLoadableValue(() -> getTheSlowestNonDurationReadPosition().getLedger());
+             final long retentionSizeInMB = config.getRetentionSizeInMB();
+             final long retentionTimeMs = config.getRetentionTimeMillis();
+             final long totalSizeOfML = TOTAL_SIZE_UPDATER.get(this);
+@@ -3238,12 +3238,12 @@ public class ManagedLedgerImpl implements ManagedLedger, CreateCallback {
+                     // The slowest reader position is the mark delete position.
+                     // If the slowest reader position point the last entry in the ledger x,
+                     // the slowestReaderLedgerId should be x + 1 and the ledger x could be deleted.
+-                    LedgerInfo ledgerInfo = ledgers.get(slowestReaderPosition.getLedgerId());
++                    LedgerInfo ledgerInfo = ledgers.get(slowestReaderPosition.getLedger());
+                     if (ledgerInfo != null && ledgerInfo.getLedgerId() != currentLedger.getId()
+                             && ledgerInfo.getEntries() == slowestReaderPosition.getEntryId() + 1) {
+-                        slowestReaderLedgerId = slowestReaderPosition.getLedgerId() + 1;
++                        slowestReaderLedgerId = slowestReaderPosition.getLedger() + 1;
+                     } else {
+-                        slowestReaderLedgerId = slowestReaderPosition.getLedgerId();
++                        slowestReaderLedgerId = slowestReaderPosition.getLedger();
+                     }
+                 } else {
+                     promise.completeExceptionally(new ManagedLedgerException("Couldn't find reader position"));
+@@ -3435,7 +3435,7 @@ public class ManagedLedgerImpl implements ManagedLedger, CreateCallback {
+         Position currentLastConfirmedEntry = lastConfirmedEntry;
+         // Update metadata
+         for (LedgerInfo ls : ledgersToDelete) {
+-            if (currentLastConfirmedEntry != null && ls.getLedgerId() == currentLastConfirmedEntry.getLedgerId()) {
++            if (currentLastConfirmedEntry != null && ls.getLedgerId() == currentLastConfirmedEntry.getLedger()) {
+                 // this info is relevant because the lastMessageId won't be available anymore
+                 log.info("[{}] Ledger {} contains the current last confirmed entry {}, and it is going to be "
+                         + "deleted", name, ls.getLedgerId(), currentLastConfirmedEntry);
+@@ -3818,7 +3818,7 @@ public class ManagedLedgerImpl implements ManagedLedger, CreateCallback {
+                 // empty. In this the passed position is not technically
+                 // "valid", per the above check, given that it's not written
+                 // yes, but it will be valid for the logic here
+-                && !(requestOffloadTo.getLedgerId() == currentLedger.getId()
++                && !(requestOffloadTo.getLedger() == currentLedger.getId()
+                         && requestOffloadTo.getEntryId() == 0)) {
+             log.warn("[{}] Cannot start offload at position {} - LastConfirmedEntry: {}", name, pos,
+                     lastConfirmedEntry);
+@@ -3855,7 +3855,7 @@ public class ManagedLedgerImpl implements ManagedLedger, CreateCallback {
+             // be set as we iterate through the headmap values
+             long firstLedgerRetained = current;
+             for (LedgerInfo ls : ledgers.headMap(current).values()) {
+-                if (requestOffloadTo.getLedgerId() > ls.getLedgerId()) {
++                if (requestOffloadTo.getLedger() > ls.getLedgerId()) {
+                     // don't offload if ledger has already been offloaded, or is empty
+                     if (!ls.getOffloadContext().isComplete() && ls.getSize() > 0) {
+                         ledgersToOffload.add(ls);
+@@ -4165,13 +4165,13 @@ public class ManagedLedgerImpl implements ManagedLedger, CreateCallback {
+         if (pos1 == null || pos2 == null) {
+             throw new IllegalArgumentException("Positions must not be null");
+         }
+-        if (ledgers.isEmpty() || pos1.getLedgerId() < getFirstPosition().getLedgerId()
+-                || pos2.getLedgerId() < getFirstPosition().getLedgerId()
+-                || pos1.getLedgerId() > getLastPosition().getLedgerId()
+-                || pos2.getLedgerId() > getLastPosition().getLedgerId()) {
++        if (ledgers.isEmpty() || pos1.getLedger() < getFirstPosition().getLedger()
++                || pos2.getLedger() < getFirstPosition().getLedger()
++                || pos1.getLedger() > getLastPosition().getLedger()
++                || pos2.getLedger() > getLastPosition().getLedger()) {
+             return pos1.compareTo(pos2);
+         }
+-        if (pos1.getLedgerId() == pos2.getLedgerId()) {
++        if (pos1.getLedger() == pos2.getLedger()) {
+             return Long.compare(pos1.getEntryId(), pos2.getEntryId());
+         }
+         if (!isValidPosition(pos1) || !isValidPosition(pos2)) {
+@@ -4200,17 +4200,17 @@ public class ManagedLedgerImpl implements ManagedLedger, CreateCallback {
+         // 1. If the "fromPosition" is after "toPosition", then there is no entry in the range.
+         // 2. If both "formPosition" and "toPosition" have negative entry id amd in the same ledger, then there is no
+         //    entry in the range.
+-        if (fromPosition.getLedgerId() > toPosition.getLedgerId()
+-            || (fromPosition.getLedgerId() == toPosition.getLedgerId()
++        if (fromPosition.getLedger() > toPosition.getLedger()
++            || (fromPosition.getLedger() == toPosition.getLedger()
+                 && fromPosition.getEntryId() > toPosition.getEntryId())
+-            || (fromPosition.getLedgerId() == toPosition.getLedgerId()
++            || (fromPosition.getLedger() == toPosition.getLedger()
+                 && fromPosition.getEntryId() < 0 && toPosition.getEntryId() < 0)) {
+             return 0;
+         }
+ 
+         // If the 2 positions are in the same ledger.
+-        if (fromPosition.getLedgerId() == toPosition.getLedgerId()) {
+-            LedgerInfo li = ledgers.get(toPosition.getLedgerId());
++        if (fromPosition.getLedger() == toPosition.getLedger()) {
++            LedgerInfo li = ledgers.get(toPosition.getLedger());
+             if (li != null) {
+                 // If the 2 positions are in the same ledger
+                 long count = toPosition.getEntryId() - fromPosition.getEntryId() - 1;
+@@ -4232,13 +4232,13 @@ public class ManagedLedgerImpl implements ManagedLedger, CreateCallback {
+         // 1. Add the entries in the ledger pointed by toPosition.
+         //    Add nothing if "toPosition" does not exit in "ledgers".
+         //    Add nothing if "toPosition.entryId < 0".
+-        LedgerInfo toLedger = ledgers.get(toPosition.getLedgerId());
++        LedgerInfo toLedger = ledgers.get(toPosition.getLedger());
+         if (toPosition.getEntryId() >= 0 && toLedger != null) {
+             // To support the use case "cursor.getNumberOfEntries()", which will use a "toPosition" that is larger
+             // than the LAC.
+             // To support this case, use "Long.MAX_VALUE" if the ledger is the last one.
+             long entriesInLedger = comparePositions(toPosition, lastConfirmedEntry) >= 0
+-                    || toPosition.getLedgerId() == lastConfirmedEntry.getLedgerId()
++                    || toPosition.getLedger() == lastConfirmedEntry.getLedger()
+                     ? Long.MAX_VALUE : toLedger.getEntries();
+             count += Math.min(toPosition.getEntryId(), entriesInLedger - 1);
+             count += toIncluded ? 1 : 0;
+@@ -4247,7 +4247,7 @@ public class ManagedLedgerImpl implements ManagedLedger, CreateCallback {
+         // 2. Add the entries in the ledger pointed by fromPosition.
+         //    Add nothing if "toPosition.entryId < 0".
+         //    Add nothing if "toPosition" does not exit in "ledgers".
+-        LedgerInfo fromLedger = ledgers.get(fromPosition.getLedgerId());
++        LedgerInfo fromLedger = ledgers.get(fromPosition.getLedger());
+         if (fromLedger != null) {
+             if (fromPosition.getEntryId() < 0) {
+                 count += fromLedger.getEntries();
+@@ -4258,7 +4258,7 @@ public class ManagedLedgerImpl implements ManagedLedger, CreateCallback {
+         }
+ 
+         // 3. Add the whole ledgers entries in between
+-        for (LedgerInfo ls : ledgers.subMap(fromPosition.getLedgerId(), false, toPosition.getLedgerId(), false)
++        for (LedgerInfo ls : ledgers.subMap(fromPosition.getLedger(), false, toPosition.getLedger(), false)
+                 .values()) {
+             count += ls.getEntries();
+         }
+@@ -4283,11 +4283,11 @@ public class ManagedLedgerImpl implements ManagedLedger, CreateCallback {
+         long currentLedgerId;
+         long currentEntryId;
+         if (startRange == PositionBound.startIncluded) {
+-            currentLedgerId = startPosition.getLedgerId();
++            currentLedgerId = startPosition.getLedger();
+             currentEntryId = startPosition.getEntryId();
+         } else {
+             Position nextValidPosition = getNextValidPosition(startPosition);
+-            currentLedgerId = nextValidPosition.getLedgerId();
++            currentLedgerId = nextValidPosition.getLedger();
+             currentEntryId = nextValidPosition.getEntryId();
+         }
+         boolean lastLedger = false;
+@@ -4333,7 +4333,7 @@ public class ManagedLedgerImpl implements ManagedLedger, CreateCallback {
+         }
+         if (log.isDebugEnabled()) {
+             log.debug("getPositionAfterN: Start position {}:{}, startIncluded: {}, Return position {}:{}",
+-                    startPosition.getLedgerId(), startPosition.getEntryId(), startRange, positionToReturn.getLedgerId(),
++                    startPosition.getLedger(), startPosition.getEntryId(), startRange, positionToReturn.getLedger(),
+                     positionToReturn.getEntryId());
+         }
+ 
+@@ -4379,16 +4379,16 @@ public class ManagedLedgerImpl implements ManagedLedger, CreateCallback {
+     @Override
+     public Position getPreviousPosition(Position position) {
+         if (position.getEntryId() > 0) {
+-            return PositionFactory.create(position.getLedgerId(), position.getEntryId() - 1);
++            return PositionFactory.create(position.getLedger(), position.getEntryId() - 1);
+         }
+ 
+         // The previous position will be the last position of an earlier ledgers
+-        NavigableMap<Long, LedgerInfo> headMap = ledgers.headMap(position.getLedgerId(), false);
++        NavigableMap<Long, LedgerInfo> headMap = ledgers.headMap(position.getLedger(), false);
+ 
+         final Map.Entry<Long, LedgerInfo> firstEntry = headMap.firstEntry();
+         if (firstEntry == null) {
+             // There is no previous ledger, return an invalid position in the current ledger
+-            return PositionFactory.create(position.getLedgerId(), -1);
++            return PositionFactory.create(position.getLedger(), -1);
+         }
+ 
+         // We need to find the most recent non-empty ledger
+@@ -4416,25 +4416,25 @@ public class ManagedLedgerImpl implements ManagedLedger, CreateCallback {
+             log.debug("IsValid position: {} -- last: {}", position, lac);
+         }
+ 
+-        if (!ledgers.containsKey(position.getLedgerId())){
++        if (!ledgers.containsKey(position.getLedger())){
+             return false;
+         } else if (position.getEntryId() < 0) {
+             return false;
+-        } else if (currentLedger != null && position.getLedgerId() == currentLedger.getId()) {
++        } else if (currentLedger != null && position.getLedger() == currentLedger.getId()) {
+             // If current ledger is empty, the largest read position can be "{current_ledger: 0}".
+             // Else, the read position can be set to "{LAC + 1}" when subscribe at LATEST,
+-            return (position.getLedgerId() == lac.getLedgerId() && position.getEntryId() <= lac.getEntryId() + 1)
++            return (position.getLedger() == lac.getLedger() && position.getEntryId() <= lac.getEntryId() + 1)
+                     || position.getEntryId() == 0;
+-        } else if (position.getLedgerId() == lac.getLedgerId()) {
++        } else if (position.getLedger() == lac.getLedger()) {
+             // The ledger witch maintains LAC was closed, and there is an empty current ledger.
+             // If entry id is larger than LAC, it should be "{current_ledger: 0}".
+             return position.getEntryId() <= lac.getEntryId();
+         } else {
+             // Look in the ledgers map
+-            LedgerInfo ls = ledgers.get(position.getLedgerId());
++            LedgerInfo ls = ledgers.get(position.getLedger());
+ 
+             if (ls == null) {
+-                if (position.getLedgerId() < lac.getLedgerId()) {
++                if (position.getLedger() < lac.getLedger()) {
+                     // Pointing to a non-existing ledger that is older than the current ledger is invalid
+                     return false;
+                 } else {
+@@ -4463,7 +4463,7 @@ public class ManagedLedgerImpl implements ManagedLedger, CreateCallback {
+     public Position getValidPositionAfterSkippedEntries(final Position position, int skippedEntryNum) {
+         Position skippedPosition = position.getPositionAfterEntries(skippedEntryNum);
+         while (!isValidPosition(skippedPosition)) {
+-            Long nextLedgerId = ledgers.ceilingKey(skippedPosition.getLedgerId() + 1);
++            Long nextLedgerId = ledgers.ceilingKey(skippedPosition.getLedger() + 1);
+             // This means it has jumped to the last position
+             if (nextLedgerId == null) {
+                 if (currentLedgerEntries == 0 && currentLedger != null) {
+@@ -4481,9 +4481,9 @@ public class ManagedLedgerImpl implements ManagedLedger, CreateCallback {
+         if (ledgerId == null) {
+             return null;
+         }
+-        if (ledgerId > lastConfirmedEntry.getLedgerId()) {
++        if (ledgerId > lastConfirmedEntry.getLedger()) {
+             checkState(ledgers.get(ledgerId).getEntries() == 0);
+-            ledgerId = lastConfirmedEntry.getLedgerId();
++            ledgerId = lastConfirmedEntry.getLedger();
+         }
+         return PositionFactory.create(ledgerId, -1);
+     }
+@@ -4644,7 +4644,7 @@ public class ManagedLedgerImpl implements ManagedLedger, CreateCallback {
+     private ManagedLedgerInfo buildManagedLedgerInfo(ManagedLedgerInfo mlInfo) {
+         if (state == State.Terminated) {
+             mlInfo.setTerminatedPosition()
+-                    .setLedgerId(lastConfirmedEntry.getLedgerId())
++                    .setLedgerId(lastConfirmedEntry.getLedger())
+                     .setEntryId(lastConfirmedEntry.getEntryId());
+         }
+         if (managedLedgerInterceptor != null) {
+diff --git a/managed-ledger/src/main/java/org/apache/bookkeeper/mledger/impl/ManagedLedgerOfflineBacklog.java b/managed-ledger/src/main/java/org/apache/bookkeeper/mledger/impl/ManagedLedgerOfflineBacklog.java
+index 7c7b293..0bafbd6 100644
+--- a/managed-ledger/src/main/java/org/apache/bookkeeper/mledger/impl/ManagedLedgerOfflineBacklog.java
++++ b/managed-ledger/src/main/java/org/apache/bookkeeper/mledger/impl/ManagedLedgerOfflineBacklog.java
+@@ -59,7 +59,7 @@ public class ManagedLedgerOfflineBacklog {
+         Position toPosition = range.upperEndpoint();
+         boolean toIncluded = range.upperBoundType() == BoundType.CLOSED;
+ 
+-        if (fromPosition.getLedgerId() == toPosition.getLedgerId()) {
++        if (fromPosition.getLedger() == toPosition.getLedger()) {
+             // If the 2 positions are in the same ledger
+             long count = toPosition.getEntryId() - fromPosition.getEntryId() - 1;
+             count += fromIncluded ? 1 : 0;
+@@ -73,7 +73,7 @@ public class ManagedLedgerOfflineBacklog {
+             count += toIncluded ? 1 : 0;
+ 
+             // 2. Add the entries in the ledger pointed by fromPosition
+-            ManagedLedgerInfo.LedgerInfo li = ledgers.get(fromPosition.getLedgerId());
++            ManagedLedgerInfo.LedgerInfo li = ledgers.get(fromPosition.getLedger());
+             if (li != null) {
+                 count += li.getEntries() - (fromPosition.getEntryId() + 1);
+                 count += fromIncluded ? 1 : 0;
+@@ -81,7 +81,7 @@ public class ManagedLedgerOfflineBacklog {
+ 
+             // 3. Add the whole ledgers entries in between
+             for (ManagedLedgerInfo.LedgerInfo ls : ledgers
+-                    .subMap(fromPosition.getLedgerId(), false, toPosition.getLedgerId(), false).values()) {
++                    .subMap(fromPosition.getLedger(), false, toPosition.getLedger(), false).values()) {
+                 count += ls.getEntries();
+             }
+ 
+diff --git a/managed-ledger/src/main/java/org/apache/bookkeeper/mledger/impl/NonDurableCursorImpl.java b/managed-ledger/src/main/java/org/apache/bookkeeper/mledger/impl/NonDurableCursorImpl.java
+index 129163e..dc53df5 100644
+--- a/managed-ledger/src/main/java/org/apache/bookkeeper/mledger/impl/NonDurableCursorImpl.java
++++ b/managed-ledger/src/main/java/org/apache/bookkeeper/mledger/impl/NonDurableCursorImpl.java
+@@ -56,7 +56,7 @@ public class NonDurableCursorImpl extends ManagedCursorImpl {
+                     initializeCursorPosition(ledger.getFirstPositionAndCounter());
+                     break;
+             }
+-        } else if (startCursorPosition.getLedgerId() == PositionFactory.EARLIEST.getLedgerId()) {
++        } else if (startCursorPosition.getLedger() == PositionFactory.EARLIEST.getLedger()) {
+             // Start from invalid ledger to read from first available entry
+             recoverCursor(ledger.getPreviousPosition(ledger.getFirstPosition()));
+         } else {
+diff --git a/managed-ledger/src/main/java/org/apache/bookkeeper/mledger/impl/OpAddEntry.java b/managed-ledger/src/main/java/org/apache/bookkeeper/mledger/impl/OpAddEntry.java
+index 161fff5..eefd8f8 100644
+--- a/managed-ledger/src/main/java/org/apache/bookkeeper/mledger/impl/OpAddEntry.java
++++ b/managed-ledger/src/main/java/org/apache/bookkeeper/mledger/impl/OpAddEntry.java
+@@ -258,7 +258,7 @@ public class OpAddEntry implements AddCallback, CloseCallback, Runnable, Managed
+         ManagedLedgerImpl.TOTAL_SIZE_UPDATER.addAndGet(ml, dataLength);
+ 
+         // ctx will contain a Position instance only in the case of ShadowManagedLedgerImpl
+-        long ledgerId = ledger != null ? ledger.getId() : ((Position) ctx).getLedgerId();
++        long ledgerId = ledger != null ? ledger.getId() : ((Position) ctx).getLedger();
+ 
+         // Handle caching for tailing reads
+         if (ml.shouldCacheAddedEntry()) {
+diff --git a/managed-ledger/src/main/java/org/apache/bookkeeper/mledger/impl/OpFindNewest.java b/managed-ledger/src/main/java/org/apache/bookkeeper/mledger/impl/OpFindNewest.java
+index 31c1a09..42b74b3 100644
+--- a/managed-ledger/src/main/java/org/apache/bookkeeper/mledger/impl/OpFindNewest.java
++++ b/managed-ledger/src/main/java/org/apache/bookkeeper/mledger/impl/OpFindNewest.java
+@@ -210,7 +210,7 @@ class OpFindNewest implements ReadEntryCallback {
+         Position prevPosition;
+         if (exception instanceof ManagedLedgerException.LedgerNotExistException) {
+             prevPosition =
+-                ledger.getPreviousPosition(PositionFactory.create(searchPosition.getLedgerId(), -1L));
++                ledger.getPreviousPosition(PositionFactory.create(searchPosition.getLedger(), -1L));
+         } else {
+             prevPosition = ledger.getPreviousPosition(searchPosition);
+         }
+@@ -227,7 +227,7 @@ class OpFindNewest implements ReadEntryCallback {
+     private Position findNextValidPosition(Position searchPosition, Exception exception) {
+         Position nextPosition = null;
+         if (exception instanceof ManagedLedgerException.LedgerNotExistException) {
+-            Long nextLedgerId = ledger.getNextValidLedger(searchPosition.getLedgerId());
++            Long nextLedgerId = ledger.getNextValidLedger(searchPosition.getLedger());
+             if (nextLedgerId != null) {
+                 Boolean nonEmptyLedger = ledger.getOptionalLedgerInfo(nextLedgerId)
+                     .map(ledgerInfo -> ledgerInfo.getEntries() > 0)
+diff --git a/managed-ledger/src/main/java/org/apache/bookkeeper/mledger/impl/OpReadEntry.java b/managed-ledger/src/main/java/org/apache/bookkeeper/mledger/impl/OpReadEntry.java
+index b618a25..c01dbc3 100644
+--- a/managed-ledger/src/main/java/org/apache/bookkeeper/mledger/impl/OpReadEntry.java
++++ b/managed-ledger/src/main/java/org/apache/bookkeeper/mledger/impl/OpReadEntry.java
+@@ -145,8 +145,8 @@ class OpReadEntry implements ReadEntriesCallback {
+             Long lostLedger = null;
+             if (exception instanceof ManagedLedgerException.LedgerNotExistException) {
+                 // try to find and move to next valid ledger
+-                nexReadPosition = cursor.getNextLedgerPosition(readPosition.getLedgerId());
+-                lostLedger = readPosition.getLedgerId();
++                nexReadPosition = cursor.getNextLedgerPosition(readPosition.getLedger());
++                lostLedger = readPosition.getLedger();
+             } else {
+                 // Skip this read operation
+                 nexReadPosition = ledger.getValidPositionAfterSkippedEntries(readPosition, count);
+diff --git a/managed-ledger/src/main/java/org/apache/bookkeeper/mledger/impl/PositionRecyclable.java b/managed-ledger/src/main/java/org/apache/bookkeeper/mledger/impl/PositionRecyclable.java
+index 142abf9..6d447b0 100644
+--- a/managed-ledger/src/main/java/org/apache/bookkeeper/mledger/impl/PositionRecyclable.java
++++ b/managed-ledger/src/main/java/org/apache/bookkeeper/mledger/impl/PositionRecyclable.java
+@@ -43,7 +43,7 @@ public class PositionRecyclable implements Position {
+     }
+ 
+     @Override
+-    public long getLedgerId() {
++    public long getLedger() {
+         return ledgerId;
+     }
+ 
+diff --git a/managed-ledger/src/main/java/org/apache/bookkeeper/mledger/impl/ReadOnlyCursorImpl.java b/managed-ledger/src/main/java/org/apache/bookkeeper/mledger/impl/ReadOnlyCursorImpl.java
+index ff7731e..4b08003 100644
+--- a/managed-ledger/src/main/java/org/apache/bookkeeper/mledger/impl/ReadOnlyCursorImpl.java
++++ b/managed-ledger/src/main/java/org/apache/bookkeeper/mledger/impl/ReadOnlyCursorImpl.java
+@@ -68,7 +68,7 @@ public class ReadOnlyCursorImpl extends ManagedCursorImpl implements ReadOnlyCur
+     }
+ 
+     public ManagedLedgerInfo.LedgerInfo getCurrentLedgerInfo() {
+-        return this.ledger.getLedgersInfo().get(this.readPosition.getLedgerId());
++        return this.ledger.getLedgersInfo().get(this.readPosition.getLedger());
+     }
+ 
+     @Override
+diff --git a/managed-ledger/src/main/java/org/apache/bookkeeper/mledger/impl/ReadOnlyManagedLedgerImpl.java b/managed-ledger/src/main/java/org/apache/bookkeeper/mledger/impl/ReadOnlyManagedLedgerImpl.java
+index 8139148..72a326f 100644
+--- a/managed-ledger/src/main/java/org/apache/bookkeeper/mledger/impl/ReadOnlyManagedLedgerImpl.java
++++ b/managed-ledger/src/main/java/org/apache/bookkeeper/mledger/impl/ReadOnlyManagedLedgerImpl.java
+@@ -152,7 +152,7 @@ public class ReadOnlyManagedLedgerImpl extends ManagedLedgerImpl {
+ 
+     @Override
+     public void asyncReadEntry(Position position, AsyncCallbacks.ReadEntryCallback callback, Object ctx) {
+-            this.getLedgerHandle(position.getLedgerId())
++            this.getLedgerHandle(position.getLedger())
+                     .thenAccept((ledger) -> asyncReadEntry(ledger, position, callback, ctx))
+                     .exceptionally((ex) -> {
+                         log.error("[{}] Error opening ledger for reading at position {} - {}. Op: {}", this.name,
+diff --git a/managed-ledger/src/main/java/org/apache/bookkeeper/mledger/impl/ShadowManagedLedgerImpl.java b/managed-ledger/src/main/java/org/apache/bookkeeper/mledger/impl/ShadowManagedLedgerImpl.java
+index aa2a7eb..384709f 100644
+--- a/managed-ledger/src/main/java/org/apache/bookkeeper/mledger/impl/ShadowManagedLedgerImpl.java
++++ b/managed-ledger/src/main/java/org/apache/bookkeeper/mledger/impl/ShadowManagedLedgerImpl.java
+@@ -102,7 +102,7 @@ public class ShadowManagedLedgerImpl extends ManagedLedgerImpl {
+                 if (mlInfo.hasTerminatedPosition()) {
+                     NestedPositionInfo terminatedPosition = mlInfo.getTerminatedPosition();
+                     lastConfirmedEntry =
+-                            PositionFactory.create(terminatedPosition.getLedgerId(), terminatedPosition.getEntryId());
++                            PositionFactory.create(terminatedPosition.getLedger(), terminatedPosition.getEntryId());
+                     log.info("[{}][{}] Recovering managed ledger terminated at {}", name, sourceMLName,
+                             lastConfirmedEntry);
+                 }
+@@ -219,7 +219,7 @@ public class ShadowManagedLedgerImpl extends ManagedLedgerImpl {
+         lastConfirmedEntry = PositionFactory.create(currentLedger.getId(), currentLedger.getLastAddConfirmed());
+         // bypass empty ledgers, find last ledger with Message if possible.
+         while (lastConfirmedEntry.getEntryId() == -1) {
+-            Map.Entry<Long, LedgerInfo> formerLedger = ledgers.lowerEntry(lastConfirmedEntry.getLedgerId());
++            Map.Entry<Long, LedgerInfo> formerLedger = ledgers.lowerEntry(lastConfirmedEntry.getLedger());
+             if (formerLedger != null) {
+                 LedgerInfo ledgerInfo = formerLedger.getValue();
+                 lastConfirmedEntry = PositionFactory.create(ledgerInfo.getLedgerId(), ledgerInfo.getEntries() - 1);
+@@ -246,12 +246,12 @@ public class ShadowManagedLedgerImpl extends ManagedLedgerImpl {
+ 
+         if (log.isDebugEnabled()) {
+             log.debug("[{}] Add entry into shadow ledger lh={} entries={}, pos=({},{})",
+-                    name, currentLedger.getId(), currentLedgerEntries, position.getLedgerId(), position.getEntryId());
++                    name, currentLedger.getId(), currentLedgerEntries, position.getLedger(), position.getEntryId());
+         }
+         pendingAddEntries.add(addOperation);
+-        if (position.getLedgerId() <= currentLedger.getId()) {
++        if (position.getLedger() <= currentLedger.getId()) {
+             // Write into lastLedger
+-            if (position.getLedgerId() == currentLedger.getId()) {
++            if (position.getLedger() == currentLedger.getId()) {
+                 addOperation.setLedger(currentLedger);
+             }
+             currentLedgerEntries = position.getEntryId();
+@@ -294,7 +294,7 @@ public class ShadowManagedLedgerImpl extends ManagedLedgerImpl {
+         if (mlInfo.hasTerminatedPosition()) {
+             NestedPositionInfo terminatedPosition = mlInfo.getTerminatedPosition();
+             lastConfirmedEntry =
+-                    PositionFactory.create(terminatedPosition.getLedgerId(), terminatedPosition.getEntryId());
++                    PositionFactory.create(terminatedPosition.getLedger(), terminatedPosition.getEntryId());
+             log.info("[{}][{}] Process managed ledger terminated at {}", name, sourceMLName, lastConfirmedEntry);
+         }
+ 
+@@ -396,8 +396,8 @@ public class ShadowManagedLedgerImpl extends ManagedLedgerImpl {
+         // Process all the pending addEntry requests
+         for (OpAddEntry op : pendingAddEntries) {
+             Position position = (Position) op.getCtx();
+-            if (position.getLedgerId() <= currentLedger.getId()) {
+-                if (position.getLedgerId() == currentLedger.getId()) {
++            if (position.getLedger() <= currentLedger.getId()) {
++                if (position.getLedger() == currentLedger.getId()) {
+                     op.setLedger(currentLedger);
+                 } else {
+                     op.setLedger(null);
+diff --git a/managed-ledger/src/main/java/org/apache/bookkeeper/mledger/impl/cache/RangeEntryCacheImpl.java b/managed-ledger/src/main/java/org/apache/bookkeeper/mledger/impl/cache/RangeEntryCacheImpl.java
+index 2c1e9ee..617c0c9 100644
+--- a/managed-ledger/src/main/java/org/apache/bookkeeper/mledger/impl/cache/RangeEntryCacheImpl.java
++++ b/managed-ledger/src/main/java/org/apache/bookkeeper/mledger/impl/cache/RangeEntryCacheImpl.java
+@@ -302,12 +302,12 @@ public class RangeEntryCacheImpl implements EntryCache {
+     void asyncReadEntriesByPosition(ReadHandle lh, Position firstPosition, Position lastPosition, int numberOfEntries,
+                                     IntSupplier expectedReadCount, final ReadEntriesCallback originalCallback,
+                                     Object ctx, boolean acquirePermits) {
+-        checkArgument(firstPosition.getLedgerId() == lastPosition.getLedgerId(),
++        checkArgument(firstPosition.getLedger() == lastPosition.getLedger(),
+                 "Invalid range. Entries %s and %s should be in the same ledger.",
+                 firstPosition, lastPosition);
+-        checkArgument(firstPosition.getLedgerId() == lh.getId(),
++        checkArgument(firstPosition.getLedger() == lh.getId(),
+                 "Invalid ReadHandle. The ledger %s of the range positions should match the handle's ledger %s.",
+-                firstPosition.getLedgerId(), lh.getId());
++                firstPosition.getLedger(), lh.getId());
+ 
+         if (log.isDebugEnabled()) {
+             log.debug("[{}] Reading {} entries in range {} to {}", ml.getName(), numberOfEntries, firstPosition,
+diff --git a/managed-ledger/src/main/java/org/apache/bookkeeper/mledger/impl/cache/ReadEntryUtils.java b/managed-ledger/src/main/java/org/apache/bookkeeper/mledger/impl/cache/ReadEntryUtils.java
+index 5cf5f05..c6be601 100644
+--- a/managed-ledger/src/main/java/org/apache/bookkeeper/mledger/impl/cache/ReadEntryUtils.java
++++ b/managed-ledger/src/main/java/org/apache/bookkeeper/mledger/impl/cache/ReadEntryUtils.java
+@@ -41,11 +41,11 @@ class ReadEntryUtils {
+             return CompletableFuture.failedFuture(new ManagedLedgerException(
+                     "LastConfirmedEntry is null when reading ledger " + handle.getId()));
+         }
+-        if (handle.getId() > lastConfirmedEntry.getLedgerId()) {
++        if (handle.getId() > lastConfirmedEntry.getLedger()) {
+             return CompletableFuture.failedFuture(new ManagedLedgerException("LastConfirmedEntry is "
+                     + lastConfirmedEntry + " when reading ledger " + handle.getId()));
+         }
+-        if (handle.getId() == lastConfirmedEntry.getLedgerId() && lastEntry > lastConfirmedEntry.getEntryId()) {
++        if (handle.getId() == lastConfirmedEntry.getLedger() && lastEntry > lastConfirmedEntry.getEntryId()) {
+             return CompletableFuture.failedFuture(new ManagedLedgerException("LastConfirmedEntry is "
+                     + lastConfirmedEntry + " when reading entry " + lastEntry));
+         }
+diff --git a/pulsar-broker/src/main/java/org/apache/pulsar/broker/admin/impl/PersistentTopicsBase.java b/pulsar-broker/src/main/java/org/apache/pulsar/broker/admin/impl/PersistentTopicsBase.java
+index 6b85eb8..6638405 100644
+--- a/pulsar-broker/src/main/java/org/apache/pulsar/broker/admin/impl/PersistentTopicsBase.java
++++ b/pulsar-broker/src/main/java/org/apache/pulsar/broker/admin/impl/PersistentTopicsBase.java
+@@ -1689,13 +1689,13 @@ public class PersistentTopicsBase extends AdminResource {
+ 
+                         if (rawResult.getFirstPosition() != null) {
+                             result.setFirstMessageId(
+-                                    rawResult.getFirstPosition().getLedgerId()
++                                    rawResult.getFirstPosition().getLedger()
+                                     + ":"
+                                     + rawResult.getFirstPosition().getEntryId());
+                         }
+ 
+                         if (rawResult.getLastPosition() != null) {
+-                            result.setLastMessageId(rawResult.getLastPosition().getLedgerId()
++                            result.setLastMessageId(rawResult.getLastPosition().getLedger()
+                                     + ":"
+                                     + rawResult.getLastPosition().getEntryId());
+                         }
+@@ -2866,7 +2866,7 @@ public class PersistentTopicsBase extends AdminResource {
+             if (position == null) {
+                 return null;
+             } else {
+-                return new MessageIdImpl(position.getLedgerId(), position.getEntryId(),
++                return new MessageIdImpl(position.getLedger(), position.getEntryId(),
+                     topicName.getPartitionIndex());
+             }
+         });
+@@ -5401,7 +5401,7 @@ public class PersistentTopicsBase extends AdminResource {
+                                 "No messages found in topic " + topicName));
+                     }
+                     return findMessageIndexByPosition(
+-                            PositionFactory.create(firstPosition.getLedgerId(), 0),
++                            PositionFactory.create(firstPosition.getLedger(), 0),
+                             managedLedger)
+                             .thenCompose(firstIndex -> {
+                                 if (index < firstIndex) {
+@@ -5434,7 +5434,7 @@ public class PersistentTopicsBase extends AdminResource {
+                                 }
+                             });
+                 }).thenCompose(position -> CompletableFuture.completedFuture(
+-                        new MessageIdImpl(position.getLedgerId(), position.getEntryId(), partitionIndex)));
++                        new MessageIdImpl(position.getLedger(), position.getEntryId(), partitionIndex)));
+     }
+ 
+     protected CompletableFuture<Long> findMessageIndexByPosition(Position position, ManagedLedger managedLedger) {
+diff --git a/pulsar-broker/src/main/java/org/apache/pulsar/broker/delayed/bucket/BucketDelayedDeliveryTracker.java b/pulsar-broker/src/main/java/org/apache/pulsar/broker/delayed/bucket/BucketDelayedDeliveryTracker.java
+index f83972e..9ee5df7 100644
+--- a/pulsar-broker/src/main/java/org/apache/pulsar/broker/delayed/bucket/BucketDelayedDeliveryTracker.java
++++ b/pulsar-broker/src/main/java/org/apache/pulsar/broker/delayed/bucket/BucketDelayedDeliveryTracker.java
+@@ -895,6 +895,6 @@ public class BucketDelayedDeliveryTracker extends AbstractDelayedDeliveryTracker
+     private Long firstActiveLedgerId() {
+         ManagedCursor cursor = dispatcher.getCursor();
+         Position mdp = cursor.getMarkDeletedPosition();
+-        return mdp == null ? null : mdp.getLedgerId();
++        return mdp == null ? null : mdp.getLedger();
+     }
+ }
+diff --git a/pulsar-broker/src/main/java/org/apache/pulsar/broker/rest/TopicsBase.java b/pulsar-broker/src/main/java/org/apache/pulsar/broker/rest/TopicsBase.java
+index 425e715..19f85e6 100644
+--- a/pulsar-broker/src/main/java/org/apache/pulsar/broker/rest/TopicsBase.java
++++ b/pulsar-broker/src/main/java/org/apache/pulsar/broker/rest/TopicsBase.java
+@@ -311,7 +311,7 @@ public class TopicsBase extends PersistentTopicsBase {
+         for (int index = 0; index < publishResults.size(); index++) {
+             try {
+                 Position position = publishResults.get(index).get();
+-                MessageId messageId = new MessageIdImpl(position.getLedgerId(), position.getEntryId(),
++                MessageId messageId = new MessageIdImpl(position.getLedger(), position.getEntryId(),
+                         Integer.parseInt(produceMessageResults.get(index).getMessageId()));
+                 produceMessageResults.get(index).setMessageId(messageId.toString());
+             } catch (Exception e) {
+diff --git a/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/BacklogQuotaManager.java b/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/BacklogQuotaManager.java
+index b5a0d58..9151c89 100644
+--- a/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/BacklogQuotaManager.java
++++ b/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/BacklogQuotaManager.java
+@@ -243,9 +243,9 @@ public class BacklogQuotaManager {
+                             slowestConsumer.getName(), oldestPosition, slowestConsumer.getReadPosition());
+                     }
+                     ManagedLedgerInfo.LedgerInfo ledgerInfo =
+-                        mLedger.getLedgerInfo(oldestPosition.getLedgerId()).get();
++                        mLedger.getLedgerInfo(oldestPosition.getLedger()).get();
+                     if (ledgerInfo == null) {
+-                        long ledgerId = mLedger.getLedgersInfo().ceilingKey(oldestPosition.getLedgerId() + 1);
++                        long ledgerId = mLedger.getLedgersInfo().ceilingKey(oldestPosition.getLedger() + 1);
+                         Position nextPosition = PositionFactory.create(ledgerId, -1);
+                         slowestConsumer.markDelete(nextPosition);
+                         markDeletePositionMoveForward(persistentTopic, slowestConsumer);
+@@ -255,7 +255,7 @@ public class BacklogQuotaManager {
+                     if (ledgerInfo.getTimestamp() > 0
+                         && currentMillis - ledgerInfo.getTimestamp() > SECONDS.toMillis(quota.getLimitTime())) {
+                         // skip whole ledger for the slowest cursor
+-                        long ledgerId = mLedger.getLedgersInfo().ceilingKey(oldestPosition.getLedgerId() + 1);
++                        long ledgerId = mLedger.getLedgersInfo().ceilingKey(oldestPosition.getLedger() + 1);
+                         Position nextPosition = PositionFactory.create(ledgerId, -1);
+                         if (!nextPosition.equals(oldestPosition)) {
+                             slowestConsumer.markDelete(nextPosition);
+diff --git a/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/Consumer.java b/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/Consumer.java
+index e76139f..2a6b3b1 100644
+--- a/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/Consumer.java
++++ b/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/Consumer.java
+@@ -614,7 +614,7 @@ public class Consumer {
+                 }
+                 if (ackedCount > 0) {
+                     boolean updated = ackOwnerConsumer.updateRemainingUnacked(
+-                            position.getLedgerId(), position.getEntryId(), (int) ackedCount);
++                            position.getLedger(), position.getEntryId(), (int) ackedCount);
+                     if (updated) {
+                         addAndGetUnAckedMsgs(ackOwnerConsumer, -(int) ackedCount);
+                     }
+@@ -622,7 +622,7 @@ public class Consumer {
+             } else {
+                 position = PositionFactory.create(msgId.getLedgerId(), msgId.getEntryId());
+                 IntIntPair removed = ackOwnerConsumer.removePendingAckAndGet(
+-                        position.getLedgerId(), position.getEntryId());
++                        position.getLedger(), position.getEntryId());
+                 if (removed != null) {
+                     ackedCount = removed.leftInt();
+                     addAndGetUnAckedMsgs(ackOwnerConsumer, -(int) ackedCount);
+@@ -704,14 +704,14 @@ public class Consumer {
+                 ackedCount = getAckedCountForTransactionAck(batchSize, ackSets);
+                 if (ackedCount > 0) {
+                     boolean updated = ackOwnerConsumer.updateRemainingUnacked(
+-                            position.getLedgerId(), position.getEntryId(), (int) ackedCount);
++                            position.getLedger(), position.getEntryId(), (int) ackedCount);
+                     if (updated) {
+                         addAndGetUnAckedMsgs(ackOwnerConsumer, -(int) ackedCount);
+                     }
+                 }
+             } else {
+                 IntIntPair removed = ackOwnerConsumer.removePendingAckAndGet(
+-                        position.getLedgerId(), position.getEntryId());
++                        position.getLedger(), position.getEntryId());
+                 if (removed != null) {
+                     addAndGetUnAckedMsgs(ackOwnerConsumer, -removed.leftInt());
+                     updateBlockedConsumerOnUnackedMsgs(ackOwnerConsumer);
+@@ -745,7 +745,7 @@ public class Consumer {
+                                                         Consumer consumer) {
+         long ackedCount = 0;
+         if (isAcknowledgmentAtBatchIndexLevelEnabled && Subscription.isIndividualAckMode(subType)
+-            && consumer.getPendingAcks().contains(position.getLedgerId(), position.getEntryId())) {
++            && consumer.getPendingAcks().contains(position.getLedger(), position.getEntryId())) {
+             long[] cursorAckSet = getCursorAckSet(position);
+             if (cursorAckSet != null) {
+                 BitSetRecyclable cursorBitSet = BitSetRecyclable.create().resetWords(cursorAckSet);
+@@ -1138,7 +1138,7 @@ public class Consumer {
+      */
+     private boolean removePendingAcks(Consumer ackOwnedConsumer, Position position) {
+         PendingAcksMap ownedConsumerPendingAcks = ackOwnedConsumer.getPendingAcks();
+-        if (!ownedConsumerPendingAcks.remove(position.getLedgerId(), position.getEntryId())) {
++        if (!ownedConsumerPendingAcks.remove(position.getLedger(), position.getEntryId())) {
+             // Message was already removed by the other consumer
+             return false;
+         }
+@@ -1265,7 +1265,7 @@ public class Consumer {
+         List<Position> pendingPositions = new ArrayList<>();
+         for (MessageIdData msg : messageIds) {
+             Position position = PositionFactory.create(msg.getLedgerId(), msg.getEntryId());
+-            IntIntPair pendingAck = pendingAcks.removeAndGet(position.getLedgerId(), position.getEntryId());
++            IntIntPair pendingAck = pendingAcks.removeAndGet(position.getLedger(), position.getEntryId());
+             if (pendingAck != null) {
+                 totalRedeliveryMessages += pendingAck.leftInt();
+                 pendingPositions.add(position);
+diff --git a/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/InMemoryRedeliveryTracker.java b/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/InMemoryRedeliveryTracker.java
+index 6695620..f1abb4d 100644
+--- a/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/InMemoryRedeliveryTracker.java
++++ b/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/InMemoryRedeliveryTracker.java
+@@ -36,7 +36,7 @@ public class InMemoryRedeliveryTracker implements RedeliveryTracker {
+         long stamp = rwLock.writeLock();
+         int newCount;
+         try {
+-            Long2IntMap entryMap = trackerCache.computeIfAbsent(position.getLedgerId(),
++            Long2IntMap entryMap = trackerCache.computeIfAbsent(position.getLedger(),
+                     k -> new Long2IntOpenHashMap());
+             newCount = entryMap.getOrDefault(position.getEntryId(), 0) + 1;
+             entryMap.put(position.getEntryId(), newCount);
+@@ -67,11 +67,11 @@ public class InMemoryRedeliveryTracker implements RedeliveryTracker {
+     public void remove(Position position) {
+         long stamp = rwLock.writeLock();
+         try {
+-            Long2IntMap entryMap = trackerCache.get(position.getLedgerId());
++            Long2IntMap entryMap = trackerCache.get(position.getLedger());
+             if (entryMap != null) {
+                 entryMap.remove(position.getEntryId());
+                 if (entryMap.isEmpty()) {
+-                    trackerCache.remove(position.getLedgerId());
++                    trackerCache.remove(position.getLedger());
+                 }
+             }
+         } finally {
+@@ -87,11 +87,11 @@ public class InMemoryRedeliveryTracker implements RedeliveryTracker {
+         long stamp = rwLock.writeLock();
+         try {
+             for (Position position : positions) {
+-                Long2IntMap entryMap = trackerCache.get(position.getLedgerId());
++                Long2IntMap entryMap = trackerCache.get(position.getLedger());
+                 if (entryMap != null) {
+                     entryMap.remove(position.getEntryId());
+                     if (entryMap.isEmpty()) {
+-                        trackerCache.remove(position.getLedgerId());
++                        trackerCache.remove(position.getLedger());
+                     }
+                 }
+             }
+diff --git a/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/Producer.java b/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/Producer.java
+index 9534dfd..62abfb0 100644
+--- a/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/Producer.java
++++ b/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/Producer.java
+@@ -407,7 +407,7 @@ public class Producer {
+         private long entryTimestamp;
+ 
+         @Override
+-        public long getLedgerId() {
++        public long getLedger() {
+             return ledgerId;
+         }
+ 
+@@ -628,7 +628,7 @@ public class Producer {
+             callback.startTimeNs = startTimeNs;
+             callback.isMarker = isMarker;
+             callback.supportsReplDedupByLidAndEid = supportsReplDedupByLidAndEid;
+-            callback.ledgerId = position == null ? -1 : position.getLedgerId();
++            callback.ledgerId = position == null ? -1 : position.getLedger();
+             callback.entryId = position == null ? -1 : position.getEntryId();
+             if (callback.propertyMap != null) {
+                 callback.propertyMap.clear();
+@@ -651,7 +651,7 @@ public class Producer {
+             callback.chunked = chunked;
+             callback.isMarker = isMarker;
+             callback.supportsReplDedupByLidAndEid = supportsReplDedupByLidAndEid;
+-            callback.ledgerId = position == null ? -1 : position.getLedgerId();
++            callback.ledgerId = position == null ? -1 : position.getLedger();
+             callback.entryId = position == null ? -1 : position.getEntryId();
+             if (callback.propertyMap != null) {
+                 callback.propertyMap.clear();
+diff --git a/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/ServerCnx.java b/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/ServerCnx.java
+index 0550c47..222cd96 100644
+--- a/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/ServerCnx.java
++++ b/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/ServerCnx.java
+@@ -2510,7 +2510,7 @@ public class ServerCnx extends PulsarHandler implements TransportCnx {
+             }
+ 
+ 
+-            if (lastPosition.getEntryId() == -1 || !ml.getLedgersInfo().containsKey(lastPosition.getLedgerId())) {
++            if (lastPosition.getEntryId() == -1 || !ml.getLedgersInfo().containsKey(lastPosition.getLedger())) {
+                 // there is no entry in the original topic
+                 if (compactionHorizon != null) {
+                     // if readCompacted is true, we need to read the last entry from compacted topic
+@@ -2519,7 +2519,7 @@ public class ServerCnx extends PulsarHandler implements TransportCnx {
+                 } else {
+                     // if readCompacted is false, we need to return MessageId.earliest
+                     writeAndFlush(Commands.newGetLastMessageIdResponse(requestId, -1, -1, partitionIndex, -1,
+-                            markDeletePosition.getLedgerId(), markDeletePosition.getEntryId()));
++                            markDeletePosition.getLedger(), markDeletePosition.getEntryId()));
+                 }
+                 return;
+             }
+@@ -2582,9 +2582,9 @@ public class ServerCnx extends PulsarHandler implements TransportCnx {
+                                 topic.getName(), subscriptionName, lastPosition, partitionIndex);
+                     }
+ 
+-                    writeAndFlush(Commands.newGetLastMessageIdResponse(requestId, lastPosition.getLedgerId(),
++                    writeAndFlush(Commands.newGetLastMessageIdResponse(requestId, lastPosition.getLedger(),
+                             lastPosition.getEntryId(), partitionIndex, largestBatchIndex,
+-                            markDeletePosition.getLedgerId(), markDeletePosition.getEntryId()));
++                            markDeletePosition.getLedger(), markDeletePosition.getEntryId()));
+                 }
+             });
+         });
+@@ -2594,7 +2594,7 @@ public class ServerCnx extends PulsarHandler implements TransportCnx {
+                                                           int partitionIndex, Position markDeletePosition) {
+         persistentTopic.getTopicCompactionService().getLastMessagePosition().thenAccept(position ->
+                 writeAndFlush(Commands.newGetLastMessageIdResponse(requestId, position.ledgerId(), position.entryId(),
+-                        partitionIndex, position.batchIndex(), markDeletePosition.getLedgerId(),
++                        partitionIndex, position.batchIndex(), markDeletePosition.getLedger(),
+                         markDeletePosition.getEntryId()))
+         ).exceptionally(ex -> {
+             writeAndFlush(Commands.newError(
+diff --git a/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/persistent/PersistentDispatcherMultipleConsumers.java b/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/persistent/PersistentDispatcherMultipleConsumers.java
+index 009af82..37f5acf 100644
+--- a/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/persistent/PersistentDispatcherMultipleConsumers.java
++++ b/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/persistent/PersistentDispatcherMultipleConsumers.java
+@@ -403,7 +403,7 @@ public class PersistentDispatcherMultipleConsumers extends AbstractPersistentDis
+                         ? asyncReplayEntriesInOrder(messagesToReplayNow)
+                         : asyncReplayEntries(messagesToReplayNow);
+                 // clear already acked positions from replay bucket
+-                deletedMessages.forEach(position -> redeliveryMessages.remove(position.getLedgerId(),
++                deletedMessages.forEach(position -> redeliveryMessages.remove(position.getLedger(),
+                         position.getEntryId()));
+                 // if all the entries are acked-entries and cleared up from redeliveryMessages, try to read
+                 // next entries as readCompletedEntries-callback was never called
+@@ -457,7 +457,7 @@ public class PersistentDispatcherMultipleConsumers extends AbstractPersistentDis
+             final DelayedDeliveryTracker deliveryTracker = delayedDeliveryTracker.get();
+             if (deliveryTracker instanceof BucketDelayedDeliveryTracker) {
+                 skipCondition = position -> ((BucketDelayedDeliveryTracker) deliveryTracker)
+-                        .containsMessage(position.getLedgerId(), position.getEntryId());
++                        .containsMessage(position.getLedger(), position.getEntryId());
+             }
+         }
+         return skipCondition;
+@@ -617,10 +617,10 @@ public class PersistentDispatcherMultipleConsumers extends AbstractPersistentDis
+     public void markDeletePositionMoveForward() {
+         Position markDeletePosition = cursor.getMarkDeletedPosition();
+         if (markDeletePosition != null) {
+-            redeliveryMessages.removeAllUpTo(markDeletePosition.getLedgerId(), markDeletePosition.getEntryId());
++            redeliveryMessages.removeAllUpTo(markDeletePosition.getLedger(), markDeletePosition.getEntryId());
+             for (Consumer consumer : consumerList) {
+                 consumer.removePendingAcksUpToPositionAndDecrementUnacked(
+-                        markDeletePosition.getLedgerId(), markDeletePosition.getEntryId());
++                        markDeletePosition.getLedger(), markDeletePosition.getEntryId());
+             }
+         }
+     }
+@@ -1066,7 +1066,7 @@ public class PersistentDispatcherMultipleConsumers extends AbstractPersistentDis
+             havePendingReplayRead = false;
+             if (exception instanceof ManagedLedgerException.InvalidReplayPositionException) {
+                 Position markDeletePosition = cursor.getMarkDeletedPosition();
+-                redeliveryMessages.removeAllUpTo(markDeletePosition.getLedgerId(), markDeletePosition.getEntryId());
++                redeliveryMessages.removeAllUpTo(markDeletePosition.getLedger(), markDeletePosition.getEntryId());
+             }
+         }
+ 
+@@ -1174,7 +1174,7 @@ public class PersistentDispatcherMultipleConsumers extends AbstractPersistentDis
+         positions.forEach(position -> {
+             // TODO: We want to pass a sticky key hash as a third argument to guarantee the order of the messages
+             // on Key_Shared subscription, but it's difficult to get the sticky key here
+-            if (addMessageToReplay(position.getLedgerId(), position.getEntryId())) {
++            if (addMessageToReplay(position.getLedger(), position.getEntryId())) {
+                 redeliveryTracker.incrementAndGetRedeliveryCount(position);
+                 addedToReplay.setTrue();
+             }
+@@ -1348,7 +1348,7 @@ public class PersistentDispatcherMultipleConsumers extends AbstractPersistentDis
+             delayedDeliveryTracker.get().resetTickTime(topic.getDelayedDeliveryTickTimeMillis());
+             NavigableSet<Position> messagesAvailableNow =
+                     delayedDeliveryTracker.get().getScheduledMessages(cappedMaxMessagesToRead);
+-            messagesAvailableNow.forEach(p -> redeliveryMessages.add(p.getLedgerId(), p.getEntryId()));
++            messagesAvailableNow.forEach(p -> redeliveryMessages.add(p.getLedger(), p.getEntryId()));
+         }
+         if (!redeliveryMessages.isEmpty()) {
+             return redeliveryMessages.getMessagesToReplayNow(cappedMaxMessagesToRead, createFilterForReplay());
+@@ -1450,8 +1450,8 @@ public class PersistentDispatcherMultipleConsumers extends AbstractPersistentDis
+ 
+     private boolean checkIfMessageIsUnacked(long ledgerId, long entryId) {
+         Position markDeletePosition = cursor.getMarkDeletedPosition();
+-        return (markDeletePosition == null || ledgerId > markDeletePosition.getLedgerId()
+-                || (ledgerId == markDeletePosition.getLedgerId() && entryId > markDeletePosition.getEntryId()));
++        return (markDeletePosition == null || ledgerId > markDeletePosition.getLedger()
++                || (ledgerId == markDeletePosition.getLedger() && entryId > markDeletePosition.getEntryId()));
+     }
+ 
+     @Override
+diff --git a/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/persistent/PersistentDispatcherMultipleConsumersClassic.java b/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/persistent/PersistentDispatcherMultipleConsumersClassic.java
+index a0bb11b..ee4422f 100644
+--- a/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/persistent/PersistentDispatcherMultipleConsumersClassic.java
++++ b/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/persistent/PersistentDispatcherMultipleConsumersClassic.java
+@@ -372,7 +372,7 @@ public class PersistentDispatcherMultipleConsumersClassic extends AbstractPersis
+                         : asyncReplayEntries(messagesToReplayFiltered);
+                 // clear already acked positions from replay bucket
+ 
+-                deletedMessages.forEach(position -> redeliveryMessages.remove(((Position) position).getLedgerId(),
++                deletedMessages.forEach(position -> redeliveryMessages.remove(((Position) position).getLedger(),
+                         ((Position) position).getEntryId()));
+                 // if all the entries are acked-entries and cleared up from redeliveryMessages, try to read
+                 // next entries as readCompletedEntries-callback was never called
+@@ -401,7 +401,7 @@ public class PersistentDispatcherMultipleConsumersClassic extends AbstractPersis
+                 NavigableSet<Position> toReplay = getMessagesToReplayNow(1);
+                 if (!toReplay.isEmpty()) {
+                     minReplayedPosition = toReplay.first();
+-                    redeliveryMessages.add(minReplayedPosition.getLedgerId(), minReplayedPosition.getEntryId());
++                    redeliveryMessages.add(minReplayedPosition.getLedger(), minReplayedPosition.getEntryId());
+                 } else {
+                     minReplayedPosition = null;
+                 }
+@@ -412,7 +412,7 @@ public class PersistentDispatcherMultipleConsumersClassic extends AbstractPersis
+                     final DelayedDeliveryTracker deliveryTracker = delayedDeliveryTracker.get();
+                     if (deliveryTracker instanceof BucketDelayedDeliveryTracker) {
+                         skipCondition = position -> ((BucketDelayedDeliveryTracker) deliveryTracker)
+-                                .containsMessage(position.getLedgerId(), position.getEntryId());
++                                .containsMessage(position.getLedger(), position.getEntryId());
+                     }
+                     cursor.asyncReadEntriesWithSkipOrWait(messagesToRead, bytesToRead, this, ReadType.Normal,
+                             topic.getMaxReadPosition(), skipCondition);
+@@ -922,7 +922,7 @@ public class PersistentDispatcherMultipleConsumersClassic extends AbstractPersis
+             havePendingReplayRead = false;
+             if (exception instanceof ManagedLedgerException.InvalidReplayPositionException) {
+                 Position markDeletePosition = (Position) cursor.getMarkDeletedPosition();
+-                redeliveryMessages.removeAllUpTo(markDeletePosition.getLedgerId(), markDeletePosition.getEntryId());
++                redeliveryMessages.removeAllUpTo(markDeletePosition.getLedger(), markDeletePosition.getEntryId());
+             }
+         }
+ 
+@@ -1021,7 +1021,7 @@ public class PersistentDispatcherMultipleConsumersClassic extends AbstractPersis
+         positions.forEach(position -> {
+             // TODO: We want to pass a sticky key hash as a third argument to guarantee the order of the messages
+             // on Key_Shared subscription, but it's difficult to get the sticky key here
+-            if (addMessageToReplay(position.getLedgerId(), position.getEntryId())) {
++            if (addMessageToReplay(position.getLedger(), position.getEntryId())) {
+                 redeliveryTracker.incrementAndGetRedeliveryCount(position);
+             }
+         });
+@@ -1188,7 +1188,7 @@ public class PersistentDispatcherMultipleConsumersClassic extends AbstractPersis
+             delayedDeliveryTracker.get().resetTickTime(topic.getDelayedDeliveryTickTimeMillis());
+             NavigableSet<Position> messagesAvailableNow =
+                     delayedDeliveryTracker.get().getScheduledMessages(maxMessagesToRead);
+-            messagesAvailableNow.forEach(p -> redeliveryMessages.add(p.getLedgerId(), p.getEntryId()));
++            messagesAvailableNow.forEach(p -> redeliveryMessages.add(p.getLedger(), p.getEntryId()));
+         }
+ 
+         if (!redeliveryMessages.isEmpty()) {
+@@ -1279,8 +1279,8 @@ public class PersistentDispatcherMultipleConsumersClassic extends AbstractPersis
+ 
+     private boolean checkIfMessageIsUnacked(long ledgerId, long entryId) {
+         Position markDeletePosition = cursor.getMarkDeletedPosition();
+-        return (markDeletePosition == null || ledgerId > markDeletePosition.getLedgerId()
+-                || (ledgerId == markDeletePosition.getLedgerId() && entryId > markDeletePosition.getEntryId()));
++        return (markDeletePosition == null || ledgerId > markDeletePosition.getLedger()
++                || (ledgerId == markDeletePosition.getLedger() && entryId > markDeletePosition.getEntryId()));
+     }
+ 
+     @Override
+diff --git a/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/persistent/PersistentMessageExpiryMonitor.java b/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/persistent/PersistentMessageExpiryMonitor.java
+index 0563847..7de155d 100644
+--- a/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/persistent/PersistentMessageExpiryMonitor.java
++++ b/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/persistent/PersistentMessageExpiryMonitor.java
+@@ -117,7 +117,7 @@ public class PersistentMessageExpiryMonitor implements FindEntryCallback, Messag
+         ManagedLedger managedLedger = cursor.getManagedLedger();
+         Position deletedPosition = cursor.getMarkDeletedPosition();
+         SortedMap<Long, ManagedLedgerInfo.LedgerInfo> ledgerInfoSortedMap =
+-                managedLedger.getLedgersInfo().subMap(deletedPosition.getLedgerId(), true,
++                managedLedger.getLedgersInfo().subMap(deletedPosition.getLedger(), true,
+                         managedLedger.getLedgersInfo().lastKey(), true);
+         ManagedLedgerInfo.LedgerInfo info = null;
+         for (ManagedLedgerInfo.LedgerInfo ledgerInfo : ledgerInfoSortedMap.values()) {
+@@ -145,7 +145,7 @@ public class PersistentMessageExpiryMonitor implements FindEntryCallback, Messag
+         if (managedLedger instanceof ManagedLedgerImpl ml) {
+             // Confirm the position is valid.
+             Optional<ManagedLedgerInfo.LedgerInfo> ledgerInfoOptional =
+-                    ml.getOptionalLedgerInfo(messagePosition.getLedgerId());
++                    ml.getOptionalLedgerInfo(messagePosition.getLedger());
+             if (ledgerInfoOptional.isPresent()) {
+                 if (messagePosition.getEntryId() >= 0
+                         && ledgerInfoOptional.get().getEntries() - 1 >= messagePosition.getEntryId()) {
+@@ -263,13 +263,13 @@ public class PersistentMessageExpiryMonitor implements FindEntryCallback, Messag
+             log.warn("[{}][{}] read failed from ledger at position:{} : {}", topicName, subName, failedReadPosition,
+                     exception.getMessage());
+             if (exception instanceof LedgerNotExistException) {
+-                long failedLedgerId = failedReadPosition.get().getLedgerId();
++                long failedLedgerId = failedReadPosition.get().getLedger();
+                 ManagedLedger ledger = cursor.getManagedLedger();
+                 Position lastPositionInLedger = ledger.getOptionalLedgerInfo(failedLedgerId)
+                         .map(ledgerInfo -> PositionFactory.create(failedLedgerId, ledgerInfo.getEntries() - 1))
+                         .orElseGet(() -> {
+                             Long nextExistingLedger =
+-                                ledger.getLedgersInfo().ceilingKey(failedReadPosition.get().getLedgerId() + 1);
++                                ledger.getLedgersInfo().ceilingKey(failedReadPosition.get().getLedger() + 1);
+                             if (nextExistingLedger == null) {
+                                 log.info("[{}] [{}] Couldn't find next next valid ledger for expiry monitor when find "
+                                                 + "entry failed {}", ledger.getName(), ledger.getName(),
+diff --git a/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/persistent/PersistentStickyKeyDispatcherMultipleConsumers.java b/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/persistent/PersistentStickyKeyDispatcherMultipleConsumers.java
+index 1bcdd39..6894905 100644
+--- a/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/persistent/PersistentStickyKeyDispatcherMultipleConsumers.java
++++ b/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/persistent/PersistentStickyKeyDispatcherMultipleConsumers.java
+@@ -573,7 +573,7 @@ public class PersistentStickyKeyDispatcherMultipleConsumers extends PersistentDi
+             // positions that dispatch would only push straight back into the replay queue. Under out-of-order delivery,
+             // that check and the no-consumer check are the only live rejections here, and they made the
+             // "allowOutOfOrderDelivery ||" look-ahead escape removable.
+-            Long stickyKeyHash = redeliveryMessages.getHash(position.getLedgerId(), position.getEntryId());
++            Long stickyKeyHash = redeliveryMessages.getHash(position.getLedger(), position.getEntryId());
+             if (stickyKeyHash == null) {
+                 // The sticky key hash is missing for delayed messages and positions added through hash-less
+                 // redelivery paths. Filtering will happen at dispatch time after reading the entry from the ledger.
+diff --git a/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/persistent/PersistentStickyKeyDispatcherMultipleConsumersClassic.java b/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/persistent/PersistentStickyKeyDispatcherMultipleConsumersClassic.java
+index e957ce0..dce0d20 100644
+--- a/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/persistent/PersistentStickyKeyDispatcherMultipleConsumersClassic.java
++++ b/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/persistent/PersistentStickyKeyDispatcherMultipleConsumersClassic.java
+@@ -215,7 +215,7 @@ public class PersistentStickyKeyDispatcherMultipleConsumersClassic
+         if (sortNeeded) {
+             log.error("[{}] [{}] The items in recentlyJoinedConsumers are out-of-order. {}",
+                     topic.getName(), name, recentlyJoinedConsumers.entrySet().stream().map(entry ->
+-                            String.format("%s-%s:%s", entry.getKey().consumerName(), entry.getValue().getLedgerId(),
++                            String.format("%s-%s:%s", entry.getKey().consumerName(), entry.getValue().getLedger(),
+                                     entry.getValue().getEntryId())).collect(Collectors.toList()));
+             List<Map.Entry<Consumer, Position>> sortedList = new ArrayList<>(recentlyJoinedConsumers.entrySet());
+             Collections.sort(sortedList, Map.Entry.comparingByValue());
+@@ -291,7 +291,7 @@ public class PersistentStickyKeyDispatcherMultipleConsumersClassic
+                 // We have received a message potentially from the delayed tracker and, since we're not using it
+                 // right now, it needs to be added to the redelivery tracker or we won't attempt anymore to
+                 // resend it (until we disconnect consumer).
+-                redeliveryMessages.add(replayPosition.getLedgerId(), replayPosition.getEntryId());
++                redeliveryMessages.add(replayPosition.getLedger(), replayPosition.getEntryId());
+ 
+                 if (this.minReplayedPosition != null) {
+                     // If relayPosition is a new entry wither smaller position is inserted for redelivery during this
+@@ -558,7 +558,7 @@ public class PersistentStickyKeyDispatcherMultipleConsumersClassic
+         final Map<Consumer, List<Position>> groupedPositions = localGroupedPositions.get();
+         groupedPositions.clear();
+         for (Position pos : src) {
+-            Long stickyKeyHash = redeliveryMessages.getHash(pos.getLedgerId(), pos.getEntryId());
++            Long stickyKeyHash = redeliveryMessages.getHash(pos.getLedger(), pos.getEntryId());
+             if (stickyKeyHash == null) {
+                 res.add(pos);
+                 continue;
+diff --git a/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/persistent/PersistentSubscription.java b/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/persistent/PersistentSubscription.java
+index 1c24f68..dda50ea 100644
+--- a/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/persistent/PersistentSubscription.java
++++ b/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/persistent/PersistentSubscription.java
+@@ -461,8 +461,8 @@ public class PersistentSubscription extends AbstractSubscription {
+                 if (consumer != null
+                         && consumer.readCompacted()
+                         && !cursor.isDurable()
+-                        && ml.getOptionalLedgerInfo(position.getLedgerId()).isEmpty()) {
+-                    if (ml.getFirstPosition() == null || position.getLedgerId() > ml.getFirstPosition().getLedgerId()) {
++                        && ml.getOptionalLedgerInfo(position.getLedger()).isEmpty()) {
++                    if (ml.getFirstPosition() == null || position.getLedger() > ml.getFirstPosition().getLedger()) {
+                         log.warn("Received an ACK whose position is " + position + ", valid ledgers: "
+                                 + ml.getLedgersInfo().keySet());
+                     }
+@@ -962,7 +962,7 @@ public class PersistentSubscription extends AbstractSubscription {
+             } else {
+                 topic.getTopicCompactionService().getLastCompactedPosition().thenAccept(lastCompactedPosition -> {
+                     Position resetTo = finalPosition;
+-                    if (lastCompactedPosition != null && resetTo.compareTo(lastCompactedPosition.getLedgerId(),
++                    if (lastCompactedPosition != null && resetTo.compareTo(lastCompactedPosition.getLedger(),
+                             lastCompactedPosition.getEntryId()) <= 0) {
+                         forceReset.complete(true);
+                     } else {
+diff --git a/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/persistent/PersistentTopic.java b/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/persistent/PersistentTopic.java
+index f7c8a30..faff27a 100644
+--- a/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/persistent/PersistentTopic.java
++++ b/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/persistent/PersistentTopic.java
+@@ -774,7 +774,7 @@ public class PersistentTopic extends AbstractTopic implements Topic, AddEntryCal
+         transactionBuffer.syncMaxReadPositionForNormalPublish(ledger.getLastConfirmedEntry(),
+                 publishContext.isMarkerMessage());
+         publishContext.setMetadataFromEntryData(entryData);
+-        publishContext.completed(null, position.getLedgerId(), position.getEntryId());
++        publishContext.completed(null, position.getLedger(), position.getEntryId());
+         decrementPendingWriteOpsAndCheck();
+     }
+ 
+@@ -4354,18 +4354,18 @@ public class PersistentTopic extends AbstractTopic implements Topic, AddEntryCal
+ 
+         // The ledger timestamp is only known when ledger is closed, hence when the mark-delete
+         // is at active ledger (open) we can't estimate it.
+-        if (ledger.getLedgersInfo().lastKey().equals(markDeletePosition.getLedgerId())) {
++        if (ledger.getLedgersInfo().lastKey().equals(markDeletePosition.getLedger())) {
+             return new EstimateTimeBasedBacklogQuotaCheckResult(false, null);
+         }
+ 
+         ManagedLedgerInfo.LedgerInfo
+-                markDeletePositionLedgerInfo = ledger.getLedgerInfo(markDeletePosition.getLedgerId()).get();
++                markDeletePositionLedgerInfo = ledger.getLedgerInfo(markDeletePosition.getLedger()).get();
+ 
+         // If markDeletePositionLedgerInfo is null (ledger no longer exists due to retention/cleanup),
+         // use the next valid position instead to get a meaningful timestamp
+         if (markDeletePositionLedgerInfo == null) {
+             Position nextValidPosition = ledger.getNextValidPosition(markDeletePosition);
+-            markDeletePositionLedgerInfo = ledger.getLedgerInfo(nextValidPosition.getLedgerId()).get();
++            markDeletePositionLedgerInfo = ledger.getLedgerInfo(nextValidPosition.getLedger()).get();
+             markDeletePosition = nextValidPosition;
+         }
+ 
+@@ -4377,7 +4377,7 @@ public class PersistentTopic extends AbstractTopic implements Topic, AddEntryCal
+         if (markDeletePositionLedgerInfo != null
+                 && (markDeletePosition.getEntryId() == markDeletePositionLedgerInfo.getEntries() - 1)) {
+             Position positionToCheck = ledger.getNextValidPosition(markDeletePosition);
+-            positionToCheckLedgerInfo = ledger.getLedgerInfo(positionToCheck.getLedgerId()).get();
++            positionToCheckLedgerInfo = ledger.getLedgerInfo(positionToCheck.getLedger()).get();
+         }
+ 
+         if (positionToCheckLedgerInfo != null
+@@ -4418,7 +4418,7 @@ public class PersistentTopic extends AbstractTopic implements Topic, AddEntryCal
+                 subscriptions.forEach((name, sub) -> sub.topicTerminated());
+ 
+                 Position lastPosition = lastCommittedPosition;
+-                MessageId messageId = new MessageIdImpl(lastPosition.getLedgerId(), lastPosition.getEntryId(), -1);
++                MessageId messageId = new MessageIdImpl(lastPosition.getLedger(), lastPosition.getEntryId(), -1);
+ 
+                 log.info("[{}] Topic terminated at {}", getName(), messageId);
+                 future.complete(messageId);
+@@ -4639,11 +4639,11 @@ public class PersistentTopic extends AbstractTopic implements Topic, AddEntryCal
+         }
+         if (position.getEntryId() == -1) {
+             completableFuture
+-                    .complete(new MessageIdImpl(position.getLedgerId(), position.getEntryId(), partitionIndex));
++                    .complete(new MessageIdImpl(position.getLedger(), position.getEntryId(), partitionIndex));
+             return completableFuture;
+         }
+ 
+-        if (!ledger.getLedgersInfo().containsKey(position.getLedgerId())) {
++        if (!ledger.getLedgersInfo().containsKey(position.getLedger())) {
+             completableFuture
+                     .complete(MessageId.earliest);
+             return completableFuture;
+@@ -4657,11 +4657,11 @@ public class PersistentTopic extends AbstractTopic implements Topic, AddEntryCal
+                         metadata = Commands.parseMessageMetadata(entry.getDataBuffer());
+                     }
+                     if (metadata.hasNumMessagesInBatch()) {
+-                        completableFuture.complete(new BatchMessageIdImpl(position.getLedgerId(), position.getEntryId(),
++                        completableFuture.complete(new BatchMessageIdImpl(position.getLedger(), position.getEntryId(),
+                                 partitionIndex, metadata.getNumMessagesInBatch() - 1));
+                     } else {
+                         completableFuture
+-                                .complete(new MessageIdImpl(position.getLedgerId(), position.getEntryId(),
++                                .complete(new MessageIdImpl(position.getLedger(), position.getEntryId(),
+                                         partitionIndex));
+                     }
+                 } finally {
+@@ -5001,7 +5001,7 @@ public class PersistentTopic extends AbstractTopic implements Topic, AddEntryCal
+                             messageDeduplication.recordMessagePersisted(publishContext,
+                                     position);
+                             publishContext.setProperty("txn_id", txnID.toString());
+-                            publishContext.completed(null, position.getLedgerId(),
++                            publishContext.completed(null, position.getLedger(),
+                                     position.getEntryId());
+ 
+                             decrementPendingWriteOpsAndCheck();
+@@ -5253,7 +5253,7 @@ public class PersistentTopic extends AbstractTopic implements Topic, AddEntryCal
+         try {
+             Position lastPosition = ledger.getLastConfirmedEntry();
+             if (lastPosition == null || lastPosition.getEntryId() < 0
+-                    || !ledger.getLedgersInfo().containsKey(lastPosition.getLedgerId())) {
++                    || !ledger.getLedgersInfo().containsKey(lastPosition.getLedger())) {
+                 future.complete(0L);
+                 return future;
+             }
+diff --git a/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/persistent/ReplicatedSubscriptionsController.java b/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/persistent/ReplicatedSubscriptionsController.java
+index ac54746..5a459c4 100644
+--- a/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/persistent/ReplicatedSubscriptionsController.java
++++ b/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/persistent/ReplicatedSubscriptionsController.java
+@@ -142,7 +142,7 @@ public class ReplicatedSubscriptionsController implements AutoCloseable, Topic.P
+ 
+         Map<String, MarkersMessageIdData> clusterIds = new TreeMap<>();
+         for (ReplicatedSubscriptionSnapshotCache.ClusterEntry cluster : snapshot.clusters()) {
+-            clusterIds.put(cluster.cluster(), new MarkersMessageIdData().setLedgerId(cluster.position().getLedgerId())
++            clusterIds.put(cluster.cluster(), new MarkersMessageIdData().setLedgerId(cluster.position().getLedger())
+                     .setEntryId(cluster.position().getEntryId()));
+         }
+ 
+diff --git a/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/persistent/ReplicatedSubscriptionsSnapshotBuilder.java b/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/persistent/ReplicatedSubscriptionsSnapshotBuilder.java
+index df66794..9957d31 100644
+--- a/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/persistent/ReplicatedSubscriptionsSnapshotBuilder.java
++++ b/pulsar-broker/src/main/java/org/apache/pulsar/broker/service/persistent/ReplicatedSubscriptionsSnapshotBuilder.java
+@@ -129,7 +129,7 @@ public class ReplicatedSubscriptionsSnapshotBuilder {
+         Position p = position;
+         controller.writeMarkerAndGetPosition(
+                 Markers.newReplicatedSubscriptionsSnapshot(snapshotId, controller.localCluster(),
+-                        p.getLedgerId(), p.getEntryId(), responses))
++                        p.getLedger(), p.getEntryId(), responses))
+                 .whenComplete((ignored, exception) -> {
+                     if (exception != null) {
+                         synchronized (ReplicatedSubscriptionsSnapshotBuilder.this) {
+diff --git a/pulsar-broker/src/main/java/org/apache/pulsar/broker/transaction/buffer/impl/SingleSnapshotAbortedTxnProcessorImpl.java b/pulsar-broker/src/main/java/org/apache/pulsar/broker/transaction/buffer/impl/SingleSnapshotAbortedTxnProcessorImpl.java
+index fb84be7..01b3253 100644
+--- a/pulsar-broker/src/main/java/org/apache/pulsar/broker/transaction/buffer/impl/SingleSnapshotAbortedTxnProcessorImpl.java
++++ b/pulsar-broker/src/main/java/org/apache/pulsar/broker/transaction/buffer/impl/SingleSnapshotAbortedTxnProcessorImpl.java
+@@ -73,7 +73,7 @@ public class SingleSnapshotAbortedTxnProcessorImpl extends AbstractSnapshotAbort
+     @Override
+     public void trimExpiredAbortedTxns() {
+         while (!aborts.isEmpty() && !topic.getManagedLedger().getLedgersInfo()
+-                .containsKey(aborts.get(aborts.firstKey()).getLedgerId())) {
++                .containsKey(aborts.get(aborts.firstKey()).getLedger())) {
+             if (log.isDebugEnabled()) {
+                 log.debug("[{}] Topic transaction buffer clear aborted transaction, TxnId : {}, Position : {}",
+                         topic.getName(), aborts.firstKey(), aborts.get(aborts.firstKey()));
+@@ -122,14 +122,14 @@ public class SingleSnapshotAbortedTxnProcessorImpl extends AbstractSnapshotAbort
+         return takeSnapshotWriter.getFuture().thenCompose(writer -> {
+             TransactionBufferSnapshot snapshot = new TransactionBufferSnapshot();
+             snapshot.setTopicName(topic.getName());
+-            snapshot.setMaxReadPositionLedgerId(maxReadPosition.getLedgerId());
++            snapshot.setMaxReadPositionLedgerId(maxReadPosition.getLedger());
+             snapshot.setMaxReadPositionEntryId(maxReadPosition.getEntryId());
+             List<AbortTxnMetadata> list = new ArrayList<>();
+             aborts.forEach((k, v) -> {
+                 AbortTxnMetadata abortTxnMetadata = new AbortTxnMetadata();
+                 abortTxnMetadata.setTxnIdMostBits(k.getMostSigBits());
+                 abortTxnMetadata.setTxnIdLeastBits(k.getLeastSigBits());
+-                abortTxnMetadata.setLedgerId(v.getLedgerId());
++                abortTxnMetadata.setLedgerId(v.getLedger());
+                 abortTxnMetadata.setEntryId(v.getEntryId());
+                 list.add(abortTxnMetadata);
+             });
+diff --git a/pulsar-broker/src/main/java/org/apache/pulsar/broker/transaction/buffer/impl/SnapshotSegmentAbortedTxnProcessorImpl.java b/pulsar-broker/src/main/java/org/apache/pulsar/broker/transaction/buffer/impl/SnapshotSegmentAbortedTxnProcessorImpl.java
+index 71a666f..b7f2530 100644
+--- a/pulsar-broker/src/main/java/org/apache/pulsar/broker/transaction/buffer/impl/SnapshotSegmentAbortedTxnProcessorImpl.java
++++ b/pulsar-broker/src/main/java/org/apache/pulsar/broker/transaction/buffer/impl/SnapshotSegmentAbortedTxnProcessorImpl.java
+@@ -196,7 +196,7 @@ public class SnapshotSegmentAbortedTxnProcessorImpl extends AbstractSnapshotAbor
+         //Checking whether there are some segment expired.
+         List<Position> positionsNeedToDelete = new ArrayList<>();
+         while (!segmentIndex.isEmpty() && !topic.getManagedLedger().getLedgersInfo()
+-                .containsKey(segmentIndex.firstKey().getLedgerId())) {
++                .containsKey(segmentIndex.firstKey().getLedger())) {
+             if (log.isDebugEnabled()) {
+                 log.debug("[{}] Topic transaction buffer clear aborted transactions, maxReadPosition : {}",
+                         topic.getName(), segmentIndex.firstKey());
+@@ -225,7 +225,7 @@ public class SnapshotSegmentAbortedTxnProcessorImpl extends AbstractSnapshotAbor
+     public CompletableFuture<Void> takeAbortedTxnsSnapshot(Position maxReadPosition) {
+         //Store the latest aborted transaction IDs in unsealedTxnIDs and the according the latest max read position.
+         TransactionBufferSnapshotIndexesMetadata metadata = new TransactionBufferSnapshotIndexesMetadata(
+-                maxReadPosition.getLedgerId(), maxReadPosition.getEntryId(),
++                maxReadPosition.getLedger(), maxReadPosition.getEntryId(),
+                 convertTypeToTxnIDData(unsealedTxnIds));
+         return persistentWorker.appendTask(PersistentWorker.OperationType.UpdateIndex,
+                 () -> persistentWorker.updateSnapshotIndex(metadata));
+@@ -673,7 +673,7 @@ public class SnapshotSegmentAbortedTxnProcessorImpl extends AbstractSnapshotAbor
+             transactionBufferSnapshotSegment.setTopicName(this.topic.getName());
+             transactionBufferSnapshotSegment.setPersistentPositionEntryId(abortedMarkerPersistentPosition.getEntryId());
+             transactionBufferSnapshotSegment.setPersistentPositionLedgerId(
+-                    abortedMarkerPersistentPosition.getLedgerId());
++                    abortedMarkerPersistentPosition.getLedger());
+ 
+             return snapshotSegmentsWriter.getFuture().thenCompose(segmentWriter -> {
+                 transactionBufferSnapshotSegment.setSequenceId(this.sequenceID.get());
+@@ -683,7 +683,7 @@ public class SnapshotSegmentAbortedTxnProcessorImpl extends AbstractSnapshotAbor
+                 //Build index for this segment
+                 TransactionBufferSnapshotIndex index = new TransactionBufferSnapshotIndex();
+                 index.setSequenceID(transactionBufferSnapshotSegment.getSequenceId());
+-                index.setAbortedMarkLedgerID(abortedMarkerPersistentPosition.getLedgerId());
++                index.setAbortedMarkLedgerID(abortedMarkerPersistentPosition.getLedger());
+                 index.setAbortedMarkEntryID(abortedMarkerPersistentPosition.getEntryId());
+                 index.setSegmentLedgerID(((MessageIdImpl) messageId).getLedgerId());
+                 index.setSegmentEntryID(((MessageIdImpl) messageId).getEntryId());
+@@ -704,7 +704,7 @@ public class SnapshotSegmentAbortedTxnProcessorImpl extends AbstractSnapshotAbor
+                 return CompletableFuture.completedFuture(null);
+             } else {
+                 return updateSnapshotIndex(new TransactionBufferSnapshotIndexesMetadata(
+-                        maxReadPosition.getLedgerId(), maxReadPosition.getEntryId(), aborts));
++                        maxReadPosition.getLedger(), maxReadPosition.getEntryId(), aborts));
+             }
+         }
+ 
+diff --git a/pulsar-broker/src/main/java/org/apache/pulsar/broker/transaction/pendingack/impl/MLPendingAckStore.java b/pulsar-broker/src/main/java/org/apache/pulsar/broker/transaction/pendingack/impl/MLPendingAckStore.java
+index 203306c..daaef7d 100644
+--- a/pulsar-broker/src/main/java/org/apache/pulsar/broker/transaction/pendingack/impl/MLPendingAckStore.java
++++ b/pulsar-broker/src/main/java/org/apache/pulsar/broker/transaction/pendingack/impl/MLPendingAckStore.java
+@@ -203,7 +203,7 @@ public class MLPendingAckStore implements PendingAckStore {
+                     pendingAckMetadata.addAckSet(l);
+                 }
+             }
+-            pendingAckMetadata.setLedgerId(position.getLedgerId());
++            pendingAckMetadata.setLedgerId(position.getLedger());
+             pendingAckMetadata.setEntryId(position.getEntryId());
+             pendingAckMetadata.setBatchSize(batchSize);
+             pendingAckMetadataList.add(pendingAckMetadata);
+@@ -224,7 +224,7 @@ public class MLPendingAckStore implements PendingAckStore {
+                 pendingAckMetadata.addAckSet(l);
+             }
+         }
+-        pendingAckMetadata.setLedgerId(position.getLedgerId());
++        pendingAckMetadata.setLedgerId(position.getLedger());
+         pendingAckMetadata.setEntryId(position.getEntryId());
+         pendingAckMetadataEntry.addAllPendingAckMetadatas(Collections.singleton(pendingAckMetadata));
+         return appendCommon(pendingAckMetadataEntry, txnID);
+diff --git a/pulsar-broker/src/main/java/org/apache/pulsar/broker/transaction/pendingack/impl/PendingAckHandleImpl.java b/pulsar-broker/src/main/java/org/apache/pulsar/broker/transaction/pendingack/impl/PendingAckHandleImpl.java
+index bc85802..9b1d582 100644
+--- a/pulsar-broker/src/main/java/org/apache/pulsar/broker/transaction/pendingack/impl/PendingAckHandleImpl.java
++++ b/pulsar-broker/src/main/java/org/apache/pulsar/broker/transaction/pendingack/impl/PendingAckHandleImpl.java
+@@ -829,7 +829,7 @@ public class PendingAckHandleImpl extends PendingAckHandleState implements Pendi
+                      */
+                     MutablePair<Position, Integer> positionPair = positions.get(i);
+                     long[] positionPairLeftAckSet = getAckSetArrayOrNull(positionPair.left);
+-                    positionPair.left = createPositionWithAckSet(positionPair.left.getLedgerId(),
++                    positionPair.left = createPositionWithAckSet(positionPair.left.getLedger(),
+                             positionPair.left.getEntryId(),
+                             Arrays.copyOf(positionPairLeftAckSet, positionPairLeftAckSet.length));
+                     this.individualAckPositions.put(position, positionPair);
+@@ -1010,7 +1010,7 @@ public class PendingAckHandleImpl extends PendingAckHandleState implements Pendi
+         if (cumulativeAckOfTransaction != null && cumulativeAckOfTransaction.getLeft().equals(txnID)) {
+             Position position = cumulativeAckOfTransaction.getRight();
+             StringBuilder stringBuilder = new StringBuilder()
+-                    .append(position.getLedgerId())
++                    .append(position.getLedger())
+                     .append(':')
+                     .append(position.getEntryId());
+             long[] positionAckSet = getAckSetArrayOrNull(position);
+diff --git a/pulsar-broker/src/main/java/org/apache/pulsar/compaction/CompactedTopicImpl.java b/pulsar-broker/src/main/java/org/apache/pulsar/compaction/CompactedTopicImpl.java
+index 330f950..1d39ba0 100644
+--- a/pulsar-broker/src/main/java/org/apache/pulsar/compaction/CompactedTopicImpl.java
++++ b/pulsar-broker/src/main/java/org/apache/pulsar/compaction/CompactedTopicImpl.java
+@@ -345,7 +345,7 @@ public class CompactedTopicImpl implements CompactedTopic {
+ 
+     private static int comparePositionAndMessageId(Position p, MessageIdData m) {
+         return ComparisonChain.start()
+-            .compare(p.getLedgerId(), m.getLedgerId())
++            .compare(p.getLedger(), m.getLedgerId())
+             .compare(p.getEntryId(), m.getEntryId()).result();
+     }
+ 
+diff --git a/pulsar-broker/src/main/java/org/apache/pulsar/compaction/CompactedTopicUtils.java b/pulsar-broker/src/main/java/org/apache/pulsar/compaction/CompactedTopicUtils.java
+index fba12d5..e1d1a65 100644
+--- a/pulsar-broker/src/main/java/org/apache/pulsar/compaction/CompactedTopicUtils.java
++++ b/pulsar-broker/src/main/java/org/apache/pulsar/compaction/CompactedTopicUtils.java
+@@ -53,7 +53,7 @@ public class CompactedTopicUtils {
+         return lastCompactedPositionFuture.thenCompose(lastCompactedPosition -> {
+             if (lastCompactedPosition == null
+                     || readPosition.compareTo(
+-                    lastCompactedPosition.getLedgerId(), lastCompactedPosition.getEntryId()) > 0) {
++                    lastCompactedPosition.getLedger(), lastCompactedPosition.getEntryId()) > 0) {
+                 if (wait) {
+                     return readEntriesWithSkipOrWait(cursor, maxEntries, bytesToRead, maxReadPosition, null);
+                 } else {
+@@ -67,7 +67,7 @@ public class CompactedTopicUtils {
+                     .thenApply(entries -> {
+                         if (CollectionUtils.isEmpty(entries)) {
+                             Position seekToPosition = lastCompactedPosition.getNext();
+-                            if (readPosition.compareTo(seekToPosition.getLedgerId(), seekToPosition.getEntryId()) > 0) {
++                            if (readPosition.compareTo(seekToPosition.getLedger(), seekToPosition.getEntryId()) > 0) {
+                                 seekToPosition = readPosition;
+                             }
+                             cursor.seek(seekToPosition);
