@@ -1,0 +1,415 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Graph vs Grep on Pulsar</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: lab-notebook report. One reading column for prose, full-width bands for matrix and run tables. */
+:root{
+  --bg:#f6f6f3; --surface:#fcfcfb; --line:#e3e2dc; --line-2:#cfcec6;
+  --ink:#121211; --ink-2:#52514e; --ink-3:#7a7972;
+  --sA:#2a78d6; --sB:#eb6834; --sB0:#1baf7a;
+  --seq-1:#cde2fb; --seq-2:#9ec5f4; --seq-3:#6da7ec; --seq-4:#3987e5; --seq-5:#256abf; --seq-6:#184f95;
+  --ok:#0ca30c; --warn:#b97a00; --bad:#d03b3b; --bad-bg:#fbe9e8; --ok-bg:#e6f4e6; --warn-bg:#fbf1dc;
+  --code-bg:#efeee9;
+  --f-display:"Newsreader", Georgia, "Times New Roman", serif;
+  --f-body:"IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --f-mono:"JetBrains Mono", ui-monospace, "Cascadia Code", Consolas, monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0f0f0e; --surface:#1a1a19; --line:#2c2c2a; --line-2:#3d3d3a;
+  --ink:#f0efec; --ink-2:#c3c2b7; --ink-3:#8f8e86;
+  --sA:#3987e5; --sB:#d95926; --sB0:#199e70;
+  --seq-1:#13253d; --seq-2:#173a66; --seq-3:#1c5cab; --seq-4:#2a78d6; --seq-5:#5598e7; --seq-6:#9ec5f4;
+  --ok:#3fbf3f; --warn:#e5a52a; --bad:#e66767; --bad-bg:#3a1e1d; --ok-bg:#16301a; --warn-bg:#352a12;
+  --code-bg:#232321; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f0f0e; --surface:#1a1a19; --line:#2c2c2a; --line-2:#3d3d3a;
+  --ink:#f0efec; --ink-2:#c3c2b7; --ink-3:#8f8e86;
+  --sA:#3987e5; --sB:#d95926; --sB0:#199e70;
+  --seq-1:#13253d; --seq-2:#173a66; --seq-3:#1c5cab; --seq-4:#2a78d6; --seq-5:#5598e7; --seq-6:#9ec5f4;
+  --ok:#3fbf3f; --warn:#e5a52a; --bad:#e66767; --bad-bg:#3a1e1d; --ok-bg:#16301a; --warn-bg:#352a12;
+  --code-bg:#232321; color-scheme:dark}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 var(--f-body);font-variant-numeric:tabular-nums}
+.wrap{max-width:1160px;margin-inline:auto;padding-block:48px 96px;padding-left:max(20px,env(safe-area-inset-left,0px));padding-right:max(20px,env(safe-area-inset-right,0px))}
+.prose{max-width:68ch}
+h1,h2,h3{text-wrap:balance}
+h1{font:400 clamp(2.1rem,4.6vw,3.4rem)/1.08 var(--f-display);margin:0;letter-spacing:-.01em}
+h2{font:500 1.6rem/1.2 var(--f-display);margin:0 0 6px}
+h3{font:600 1rem/1.3 var(--f-body);margin:0}
+p{margin:0}
+.eyebrow{font:500 12px/1 var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}
+.muted{color:var(--ink-2)}
+.small{font-size:13px}
+code,.mono{font-family:var(--f-mono);font-size:.86em}
+section{margin-top:64px;display:flex;flex-direction:column;gap:18px}
+.lede{font:400 1.28rem/1.5 var(--f-display);color:var(--ink);max-width:60ch;margin-top:18px}
+.meta{display:flex;flex-wrap:wrap;gap:8px 22px;margin-top:22px;color:var(--ink-2);font-size:13px}
+.meta b{color:var(--ink);font-weight:500}
+.chips{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px}
+.chip{display:inline-flex;align-items:center;gap:8px;padding:6px 12px 6px 10px;border:1px solid var(--line-2);border-radius:999px;font-size:13px;background:var(--surface)}
+.dot{width:10px;height:10px;border-radius:50%;flex:none}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:22px;min-width:0}
+.grid3{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(min(100%,16rem),1fr))}
+.tile .name{display:flex;align-items:center;gap:8px;font-weight:600}
+.tile .desc{font-size:13px;color:var(--ink-2);margin-top:2px}
+.tile .big{font:400 2.7rem/1 var(--f-display);margin-top:18px}
+.tile .big small{font:400 13px var(--f-body);color:var(--ink-2);margin-left:6px}
+.kv{display:grid;grid-template-columns:1fr auto;gap:6px 12px;margin-top:16px;font-size:13px;color:var(--ink-2)}
+.kv b{color:var(--ink);font-weight:500;text-align:right}
+/* rig diagram */
+.rig svg{width:100%;height:auto;display:block}
+.rig .box{fill:var(--surface);stroke:var(--line-2)}
+.rig .lbl{fill:var(--ink);font:600 13px var(--f-body)}
+.rig .sub{fill:var(--ink-2);font:400 11.5px var(--f-body)}
+.rig .edge{stroke:var(--ink-3);stroke-width:1.5;fill:none}
+.rig .tag{font:500 11px var(--f-mono)}
+/* matrix */
+.tabs{display:flex;flex-wrap:wrap;gap:6px}
+.tab{font:500 13px var(--f-body);padding:7px 12px;border-radius:8px;border:1px solid var(--line-2);background:var(--surface);color:var(--ink-2);cursor:pointer}
+.tab[aria-selected="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.tab:focus-visible,.runbtn:focus-visible,summary:focus-visible{outline:2px solid var(--sA);outline-offset:2px}
+.scroll{overflow-x:auto}
+table.mx{border-collapse:separate;border-spacing:4px;width:100%;min-width:640px}
+.mx th{font:500 12px var(--f-body);color:var(--ink-2);text-align:left;padding:4px 8px;white-space:nowrap}
+.mx th.v{text-align:center}
+.mx td{border-radius:6px;text-align:center;padding:10px 6px;font:500 14px var(--f-body);position:relative}
+.mx td.task{text-align:left;background:none;padding:6px 8px}
+.mx td.task b{font:500 12px var(--f-mono);color:var(--ink-3);margin-right:8px}
+.mx td.na{color:var(--ink-3);background:transparent;border:1px dashed var(--line)}
+.mx td.verdict{text-align:left;font:400 12.5px var(--f-body);background:none}
+.pill{display:inline-block;padding:2px 9px;border-radius:999px;font:500 11.5px var(--f-body);white-space:nowrap}
+.pill.ok{background:var(--ok-bg);color:var(--ok)}.pill.bad{background:var(--bad-bg);color:var(--bad)}.pill.warn{background:var(--warn-bg);color:var(--warn)}.pill.n{background:var(--code-bg);color:var(--ink-2)}
+.legend{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--ink-2);flex-wrap:wrap}
+.ramp{display:flex;border-radius:4px;overflow:hidden}.ramp i{width:22px;height:10px;display:block}
+/* charts */
+.chart{position:relative}
+.chart svg{width:100%;height:auto;display:block;overflow:visible}
+.ax{fill:var(--ink-3);font:400 11px var(--f-body)}
+.gl{stroke:var(--line);stroke-width:1}
+.tip{position:fixed;z-index:20;pointer-events:none;background:var(--surface);border:1px solid var(--line-2);border-radius:8px;box-shadow:0 6px 24px rgba(0,0,0,.14);padding:8px 10px;font-size:12px;max-width:320px;opacity:0;transition:opacity .12s}
+.tip .h{color:var(--ink-2);margin-bottom:3px}
+.two{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(min(100%,26rem),1fr))}
+.rig,#errs{overflow-x:auto}
+.rig svg,#errs svg{min-width:680px}
+/* task cards */
+.task{display:flex;flex-direction:column;gap:16px}
+.task-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 14px}
+.task-head .id{font:500 13px var(--f-mono);color:var(--ink-3)}
+.task-head h3{font:500 1.35rem/1.25 var(--f-display)}
+.task .why{max-width:75ch;color:var(--ink-2)}
+details{border-top:1px solid var(--line);padding-top:10px}
+summary{cursor:pointer;font-size:13px;color:var(--ink-2);list-style:none}
+summary::-webkit-details-marker{display:none}
+summary::before{content:"▸";display:inline-block;width:1em;transition:transform .15s}
+details[open]>summary::before{transform:rotate(90deg)}
+.prompt{margin-top:10px;font-size:13px;background:var(--code-bg);border-radius:8px;padding:12px 14px;line-height:1.55;white-space:pre-wrap}
+.runs{display:grid;gap:8px;grid-template-columns:repeat(auto-fill,minmax(min(100%,11.5rem),1fr))}
+.runbtn{all:unset;box-sizing:border-box;cursor:pointer;display:flex;flex-direction:column;gap:6px;padding:10px 12px;border-radius:8px;border:1px solid var(--line);background:var(--bg)}
+.runbtn[aria-pressed="true"]{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
+.runbtn .top{display:flex;align-items:center;justify-content:space-between;gap:8px;font:500 12px var(--f-mono)}
+.runbtn .stat{display:flex;gap:10px;font-size:12px;color:var(--ink-2)}
+.runbtn .stat b{color:var(--ink);font-weight:500}
+.mix{display:flex;height:6px;border-radius:3px;overflow:hidden;gap:1px;background:var(--line)}
+.mix i{display:block;height:100%}
+.res{font:600 12px var(--f-body)}.res.ok{color:var(--ok)}.res.bad{color:var(--bad)}
+.detail{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(min(100%,22rem),1fr));background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:16px}
+.detail[hidden]{display:none}
+.detail h4{margin:0 0 6px;font:500 12px var(--f-mono);letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3)}
+.detail ul{margin:0;padding-left:18px;font-size:13px}
+.detail li{margin:2px 0}
+pre.q{margin:0 0 6px;background:var(--code-bg);border-radius:6px;padding:8px 10px;font:12px/1.5 var(--f-mono);white-space:pre-wrap;word-break:break-word}
+.answer{font-size:13px;white-space:pre-wrap;max-height:240px;overflow:auto;background:var(--surface);border-radius:6px;padding:8px 10px;border:1px solid var(--line)}
+.mixlegend{display:flex;flex-wrap:wrap;gap:12px;font-size:12px;color:var(--ink-2)}
+.mixlegend span{display:inline-flex;align-items:center;gap:6px}
+.sw{width:10px;height:10px;border-radius:2px;display:inline-block}
+/* findings */
+.find{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(min(100%,19rem),1fr))}
+.find .card{border-top:3px solid var(--c)}
+.find h3{font:500 1.15rem var(--f-display);margin-bottom:6px}
+.find p{font-size:14px;color:var(--ink-2)}
+ol.cav{margin:0;padding-left:20px;max-width:78ch;color:var(--ink-2)}
+ol.cav li{margin:6px 0}
+ol.cav b{color:var(--ink);font-weight:500}
+footer{margin-top:72px;border-top:1px solid var(--line);padding-top:18px;font-size:12.5px;color:var(--ink-3);display:flex;flex-wrap:wrap;gap:8px 24px}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="eyebrow">Experiment report · Apache Pulsar v4.2.5 · Sonnet 5.5</div>
+  <h1 style="margin-top:14px">Does a jQAssistant code graph make a coding agent better?</h1>
+  <p class="lede" id="lede">Mostly not. On seven of eight tasks the agent with a Neo4j graph of the code base did no better than the agent with grep. The graph earned its keep on one question type, ranking classes by how many others depend on them, and only when the prompt told the agent it was there.</p>
+  <div class="chips" id="chips"></div>
+  <div class="meta" id="meta"></div>
+</header>
+
+<section>
+  <div class="prose"><div class="eyebrow">The rig</div><h2>Same agent, same prompts, one difference</h2>
+  <p class="muted">Every run starts from a fresh git worktree of the same Pulsar commit. All three setups get the same model, tools, permissions and turn limit. Setups B and B0 additionally reach a read-only Neo4j MCP server holding a jQAssistant scan of eleven Pulsar module jars. Code changes are compiled afterwards in a JDK 21 container, and an Opus model judges each diff blind.</p></div>
+  <div class="card rig" id="rig"></div>
+</section>
+
+<section>
+  <div class="prose"><div class="eyebrow">Scoreboard</div><h2>Totals per setup</h2>
+  <p class="muted">Code runs are the six tasks that change code (T03, T04, T08, H1, H2, H3), 18 runs per setup.</p></div>
+  <div class="grid3" id="tiles"></div>
+</section>
+
+<section>
+  <div class="prose"><div class="eyebrow">Matrix</div><h2>Every task, every setup</h2>
+  <p class="muted">Mean over three runs. Darker blue is better for the chosen measure, so for cost, turns and time darker means cheaper or faster. The last column is my reading of each row.</p></div>
+  <div class="card" style="display:flex;flex-direction:column;gap:14px">
+    <div class="tabs" role="tablist" id="tabs"></div>
+    <div class="scroll"><table class="mx" id="mx"></table></div>
+    <div class="legend" id="mxleg"></div>
+  </div>
+</section>
+
+<section>
+  <div class="prose"><div class="eyebrow">Charts</div><h2>Quality, cost and how the agent worked</h2></div>
+  <div class="two">
+    <div class="card"><h3>Judge score against cost, per code run</h3><p class="small muted" style="margin:4px 0 12px">One dot per run. Up and left is better. Hollow dots did not compile.</p><div class="chart" id="scatter"></div><div class="legend" id="scleg" style="margin-top:8px"></div></div>
+    <div class="card"><h3>What the agent spent its tool calls on</h3><p class="small muted" style="margin:4px 0 12px">All tool calls of all 24 runs per setup, by kind. The graph setups mostly replaced searching, not reading or shelling out.</p><div class="chart" id="mixchart"></div><div class="mixlegend" id="mixleg" style="margin-top:10px"></div></div>
+  </div>
+  <div class="card"><h3>Compile errors left after each rename</h3><p class="small muted" style="margin:4px 0 12px">Distinct error locations per run in the three rename tasks where at least one run failed. Zero means the change compiled.</p><div class="chart" id="errs"></div></div>
+</section>
+
+<section>
+  <div class="prose"><div class="eyebrow">Task by task</div><h2>What happened in each task</h2>
+  <p class="muted">Pick a run to see the judge's notes, the first compile errors, the Cypher the agent sent to the graph, and its final answer.</p></div>
+  <div id="tasks" style="display:flex;flex-direction:column;gap:18px"></div>
+</section>
+
+<section>
+  <div class="prose"><div class="eyebrow">Verdict</div><h2>Where it shone, where it failed</h2></div>
+  <div class="find">
+    <div class="card" style="--c:var(--ok)"><h3>Shone: counting across the code base</h3><p>Ranking classes by how many others depend on them is one aggregate query in the graph and guesswork with grep. With the schema hint the agent used the graph and stayed level with the baseline; in the single pilot run it named all ten. Without the hint it wrote clumsier queries and did worst of all.</p></div>
+    <div class="card" style="--c:var(--warn)"><h3>No difference: everything grep can find</h3><p>Implementers of an interface, adding a method everywhere, a new config option, renames with distinctive names. Grep gets these in one or two calls, the agent often skipped the graph when it had it, and quality and cost stayed the same.</p></div>
+    <div class="card" style="--c:var(--bad)"><h3>Failed: the rename grep cannot disambiguate</h3><p>Renaming <code>Position.getLedgerId()</code> failed in all nine runs. The graph knows which call sites resolve to <code>Position</code>, and the graph runs queried exactly that, yet agents still renamed unrelated and generated protobuf methods. Precise data did not stop imprecise edits.</p></div>
+  </div>
+  <div class="card prose" style="max-width:none">
+    <h3 style="margin-bottom:8px">Is it worth pursuing?</h3>
+    <p class="muted" style="max-width:78ch">Not as a general data source in this form. The graph is built from compiled jars, so it has no tests, no line-accurate source and no unmerged changes, and it goes stale with every edit. A capable model with grep already closes most of the gap. It may still pay off for questions grep cannot answer at all: dependency cycles, unused public API, layering rules, transitive impact through overrides, or as a check after the agent's edit that every caller of a type was updated. Those were barely tested here and are the next experiment worth running.</p>
+  </div>
+</section>
+
+<section>
+  <div class="prose"><div class="eyebrow">Caveats</div><h2>How far to trust this</h2></div>
+  <ol class="cav">
+    <li><b>Small sample.</b> Three runs per cell. Only B0 on the ranking task stands clearly apart.</li>
+    <li><b>Jar-based graph.</b> Released jars of eleven modules: no tests, no source lines, no Maven module relations.</li>
+    <li><b>Partial compile check.</b> Main code of three to five modules, built offline in Docker. Callers elsewhere would go unnoticed, equally for every setup.</li>
+    <li><b>Circular ground truth.</b> The true answers for T02 and T07 come from the same graph the graph setups query, which favors them.</li>
+    <li><b>Blind but limited judge.</b> Opus sees only the task and the diff and cannot search the repository, so its "incomplete" calls are partly guesses. Two judgments failed and are left out.</li>
+    <li><b>One flawed prompt.</b> T08 asked for an edit in <code>conf/broker.conf</code> while limiting edits to <code>src/main</code>; several runs of every setup skipped the file.</li>
+    <li><b>Delegates count as compiling.</b> Where an interface requires the old name, agents kept a delegating method. That compiles but is not a full rename.</li>
+  </ol>
+</section>
+
+<footer>
+  <span>Data: results/runs.json, results/judgments.json, results/raw/ in this repository.</span>
+  <span>Generated by harness/make_report.py.</span>
+</footer>
+</div>
+<div class="tip" id="tip"></div>
+
+<script>
+const DATA = /*DATA*/null;
+(function(){
+const V=['A','B','B0'];
+const VN={A:'A · grep only',B:'B · graph + hint',B0:'B0 · graph, no hint'};
+const VD={A:'File tools, grep and shell',B:'A plus the Neo4j MCP server and a schema hint',B0:'A plus the Neo4j MCP server, no hint'};
+const VC={A:'var(--sA)',B:'var(--sB)',B0:'var(--sB0)'};
+const ORDER=['T02','T07','T03','T04','T08','H1','H2','H3'];
+const TT={T02:'Find every implementer of Topic',T07:'Rank the ten most depended-on classes',T03:'Add an interface method everywhere',T04:'Rename NamespaceBundle.getNamespaceObject()',T08:'Add a broker configuration option',H1:'Rename Position.getLedgerId()',H2:'Rename Subscription.getName()',H3:'Rename StickyKeyConsumerSelector.select(int)'};
+const WHY={
+ T02:'A question with one right list. Grep for "implements Topic" plus a second hop gets there, and every setup did.',
+ T07:'The one task built for a graph: counting distinct dependents per class. Recall is the share of the true top ten the agent named.',
+ T03:'Four implementers, all easy to find by name. Everything compiled everywhere.',
+ T04:'The method also exists on TopicName and is required by the ServiceUnitId interface. Most runs kept a delegate with the old name; one B and one B0 run broke the build.',
+ T08:'Add a field, log it next to an existing one and document it. The prompt contradicted itself about conf/, which explains the judge\'s lower scores.',
+ H1:'getLedgerId() exists on dozens of unrelated types, including generated protobuf classes. No run compiled. B0 runs left the fewest errors, B runs the widest spread.',
+ H2:'getName() is everywhere, but Subscription callers are mostly typed clearly. Two of three compiled in every setup.',
+ H3:'Three implementers and a handful of callers. Clean in every setup.'};
+const VERDICT={T02:['n','No difference'],T07:['warn','Hint decides'],T03:['n','No difference'],T04:['bad','Graph slightly worse'],T08:['n','No difference'],H1:['bad','All failed'],H2:['n','No difference'],H3:['n','No difference']};
+const MIX=[['search','Grep and glob','var(--seq-3)'],['read','Read','var(--seq-5)'],['shell','Shell','var(--ink-3)'],['edit','Edit','var(--seq-2)'],['graph','Graph queries','var(--sB)'],['other','Other','var(--line-2)']];
+const runs=DATA.runs, tasks=DATA.tasks;
+const $=s=>document.querySelector(s);
+const el=(tag,attrs={},kids=[])=>{const e=document.createElement(tag);for(const[k,v]of Object.entries(attrs)){if(k==='text')e.textContent=v;else if(k==='style')e.style.cssText=v;else e.setAttribute(k,v)}(Array.isArray(kids)?kids:[kids]).forEach(c=>c!=null&&e.append(c));return e};
+const NS='http://www.w3.org/2000/svg';
+const sv=(tag,attrs={},text)=>{const e=document.createElementNS(NS,tag);for(const[k,v]of Object.entries(attrs))e.setAttribute(k,v);if(text!=null)e.textContent=text;return e};
+const mean=a=>{a=a.filter(x=>x!=null);return a.length?a.reduce((s,x)=>s+x,0)/a.length:null};
+const sum=a=>{a=a.filter(x=>x!=null);return a.length?a.reduce((s,x)=>s+x,0):null};
+const usd=v=>'$'+v.toFixed(2), f1=v=>v.toFixed(1), pct=v=>Math.round(v*100)+'%';
+const of=(t,v)=>runs.filter(r=>r.task===t&&r.variant===v).sort((a,b)=>a.rep-b.rep);
+const codeRuns=v=>runs.filter(r=>r.variant===v&&r.compiled!=null);
+
+/* tooltip */
+const tip=$('#tip');
+function showTip(ev,head,lines){tip.replaceChildren(el('div',{class:'h',text:head}),...lines.map(l=>el('div',{text:l})));tip.style.opacity=1;
+  const x=Math.min(ev.clientX+14,innerWidth-tip.offsetWidth-10),y=Math.min(ev.clientY+14,innerHeight-tip.offsetHeight-10);tip.style.left=x+'px';tip.style.top=y+'px'}
+const hideTip=()=>{tip.style.opacity=0};
+
+/* header */
+V.forEach(v=>$('#chips').append(el('span',{class:'chip'},[el('span',{class:'dot',style:'background:'+VC[v]}),el('span',{text:VN[v]})])));
+const totalCost=sum(runs.map(r=>r.cost));
+[['Runs',runs.length],['Tasks',ORDER.length],['Setups',3],['Repetitions','3 per cell'],['Agent spend',usd(totalCost)],['Graph','about 190k nodes from 11 jars']].forEach(([k,v])=>$('#meta').append(el('span',{},[k+' ',el('b',{text:String(v)})])));
+
+/* rig diagram */
+(function(){
+  const W=1000,H=250,s=sv('svg',{viewBox:`0 0 ${W} ${H}`,role:'img','aria-label':'Pipeline: Pulsar jars scanned by jQAssistant into Neo4j, served by an MCP server to the agent; all setups also use grep on the source checkout'});
+  const box=(x,y,w,h,l,sub)=>{s.append(sv('rect',{x,y,width:w,height:h,rx:8,class:'box'}));s.append(sv('text',{x:x+14,y:y+24,class:'lbl'},l));sub.forEach((t,i)=>s.append(sv('text',{x:x+14,y:y+43+i*16,class:'sub'},t)))};
+  const arrow=(d)=>s.append(sv('path',{d,class:'edge','marker-end':'url(#ar)'}));
+  const defs=sv('defs');const m=sv('marker',{id:'ar',viewBox:'0 0 10 10',refX:9,refY:5,markerWidth:7,markerHeight:7,orient:'auto-start-reverse'});m.append(sv('path',{d:'M0 0L10 5L0 10z',fill:'var(--ink-3)'}));defs.append(m);s.append(defs);
+  box(10,20,170,76,'Pulsar jars',['11 modules, v4.2.5','from Maven Central']);
+  box(225,20,170,76,'jQAssistant 2.9.1',['scan + Java concepts','overrides, dependencies']);
+  box(440,20,170,76,'Neo4j 5',['55k methods, 143k calls','3.7k overrides']);
+  box(655,20,150,76,'MCP server',['mcp-neo4j-cypher','read-only']);
+  box(850,80,140,92,'Sonnet 5.5 agent',['claude -p, 30 turns','fresh worktree']);
+  box(225,150,385,76,'Pulsar source checkout',['git worktree per run: Read, Grep, Glob, Bash, Edit','available to every setup']);
+  arrow('M180 58H222');arrow('M395 58H437');arrow('M610 58H652');arrow('M805 58C835 58 850 70 905 78');arrow('M610 188H847');
+  s.append(sv('text',{x:812,y:42,class:'tag',fill:'var(--sB)'},'B, B0'));
+  s.append(sv('text',{x:700,y:180,class:'tag',fill:'var(--sA)'},'A, B, B0'));
+  $('#rig').append(s);
+})();
+
+/* tiles */
+V.forEach(v=>{
+  const c=codeRuns(v),ok=c.filter(r=>r.compiled===1).length;
+  const all=runs.filter(r=>r.variant===v);
+  const t=el('div',{class:'card tile'},[
+    el('div',{class:'name'},[el('span',{class:'dot',style:'background:'+VC[v]}),el('span',{text:VN[v]})]),
+    el('div',{class:'desc',text:VD[v]}),
+    el('div',{class:'big'},[document.createTextNode(ok+' / '+c.length),el('small',{text:'code runs compile'})]),
+    el('div',{class:'kv'},[
+      el('span',{text:'Mean judge score'}),el('b',{text:f1(mean(all.map(r=>r.judge)))+' / 10'}),
+      el('span',{text:'Recall on T07 ranking'}),el('b',{text:pct(mean(of('T07',v).map(r=>r.recall)))}),
+      el('span',{text:'Mean cost per run'}),el('b',{text:usd(mean(all.map(r=>r.cost)))}),
+      el('span',{text:'Mean time per run'}),el('b',{text:Math.round(mean(all.map(r=>r.secs)))+' s'}),
+      el('span',{text:'Graph queries per run'}),el('b',{text:f1(mean(all.map(r=>r.mcp)))})])]);
+  $('#tiles').append(t);
+});
+
+/* matrix */
+const MET=[
+ {k:'quality',label:'Outcome',get:(t,v)=>{const g=of(t,v);if(tasks[t].type==='qa'){const m=mean(g.map(r=>r.recall));return{val:m,txt:pct(m),good:m}}const s=sum(g.map(r=>r.compiled));return{val:s,txt:s+' of '+g.length+' compile',good:s/g.length}}},
+ {k:'judge',label:'Judge score',get:(t,v)=>{const m=mean(of(t,v).map(r=>r.judge));return m==null?null:{val:m,txt:f1(m),good:m/10}}},
+ {k:'errors',label:'Compile errors',get:(t,v)=>{const m=mean(of(t,v).map(r=>r.errors));return m==null?null:{val:m,txt:f1(m),good:1-Math.min(m/12,1)}}},
+ {k:'cost',label:'Cost',get:(t,v)=>{const m=mean(of(t,v).map(r=>r.cost));return{val:m,txt:usd(m),good:1-Math.min(m/0.9,1)}}},
+ {k:'turns',label:'Turns',get:(t,v)=>{const m=mean(of(t,v).map(r=>r.turns));return{val:m,txt:f1(m),good:1-Math.min(m/30,1)}}},
+ {k:'secs',label:'Time',get:(t,v)=>{const m=mean(of(t,v).map(r=>r.secs));return{val:m,txt:Math.round(m)+' s',good:1-Math.min(m/120,1)}}},
+ {k:'mcp',label:'Graph queries',get:(t,v)=>{const m=mean(of(t,v).map(r=>r.mcp));return{val:m,txt:f1(m),good:null,raw:Math.min(m/9,1)}}}];
+const SEQ=['--seq-1','--seq-2','--seq-3','--seq-4','--seq-5','--seq-6'];
+const step=g=>SEQ[Math.max(0,Math.min(5,Math.round(g*5)))];
+let cur='quality';
+function drawMatrix(){
+  const m=MET.find(x=>x.k===cur), tb=$('#mx'); tb.replaceChildren();
+  const hr=el('tr',{},[el('th',{text:'Task'}),...V.map(v=>el('th',{class:'v'},[el('span',{class:'dot',style:'display:inline-block;vertical-align:-1px;margin-right:6px;background:'+VC[v]}),document.createTextNode(VN[v])])),el('th',{text:'Reading'})]);
+  tb.append(el('thead',{},hr));const body=el('tbody');
+  ORDER.forEach(t=>{
+    const tr=el('tr',{},[el('td',{class:'task'},[el('b',{text:t}),document.createTextNode(TT[t])])]);
+    V.forEach(v=>{const c=m.get(t,v);
+      if(!c||c.val==null){tr.append(el('td',{class:'na',text:'n/a'}));return}
+      const g=c.good!=null?c.good:c.raw, s=step(g);
+      const td=el('td',{text:c.txt,style:`background:var(${s});color:${SEQ.indexOf(s)>=3?'#fff':'var(--ink)'}`});
+      td.addEventListener('mousemove',ev=>showTip(ev,t+' · '+VN[v],of(t,v).map(r=>'run '+r.rep+': '+(m.k==='quality'?(r.recall!=null?pct(r.recall):(r.compiled?'compiled':'did not compile')):m.k==='cost'?usd(r[m.k]):r[m.k]==null?'n/a':(m.k==='judge'?r.judge:Math.round(r[m.k]*10)/10)))));
+      td.addEventListener('mouseleave',hideTip);tr.append(td)});
+    const [cls,txt]=VERDICT[t];tr.append(el('td',{class:'verdict'},el('span',{class:'pill '+cls,text:txt})));
+    body.append(tr)});
+  tb.append(body);
+  const lg=$('#mxleg');lg.replaceChildren(el('span',{text:m.k==='mcp'?'fewer':'worse'}),el('span',{class:'ramp'},SEQ.map(s=>el('i',{style:'background:var('+s+')'}))),el('span',{text:m.k==='mcp'?'more graph queries':'better'}),el('span',{class:'muted',text:'· hover a cell for the three runs'}));
+}
+MET.forEach(m=>{const b=el('button',{class:'tab',role:'tab','aria-selected':String(m.k===cur),text:m.label});b.onclick=()=>{cur=m.k;document.querySelectorAll('.tab').forEach(x=>x.setAttribute('aria-selected',String(x===b)));drawMatrix()};$('#tabs').append(b)});
+drawMatrix();
+
+/* scatter: judge vs cost */
+(function(){
+  const pts=runs.filter(r=>r.judge!=null&&r.compiled!=null);
+  const W=520,H=320,L=40,R=12,T=10,B=36,s=sv('svg',{viewBox:`0 0 ${W} ${H}`});
+  const xm=Math.ceil(Math.max(...pts.map(r=>r.cost))*10)/10;
+  const x=v=>L+(W-L-R)*v/xm, y=v=>T+(H-T-B)*(1-v/10);
+  for(let v=0;v<=10;v+=2){s.append(sv('line',{x1:L,x2:W-R,y1:y(v),y2:y(v),class:'gl'}));s.append(sv('text',{x:L-8,y:y(v)+4,'text-anchor':'end',class:'ax'},v))}
+  for(let v=0;v<=xm+1e-9;v+=0.2){s.append(sv('text',{x:x(v),y:H-14,'text-anchor':'middle',class:'ax'},'$'+v.toFixed(1)))}
+  s.append(sv('text',{x:W-R,y:H-1,'text-anchor':'end',class:'ax'},'cost per run'));
+  s.append(sv('text',{x:L,y:T-0,class:'ax','dominant-baseline':'hanging',dx:4},'judge score'));
+  pts.forEach(r=>{const jx=(V.indexOf(r.variant)-1)*3;const c=sv('circle',{cx:x(r.cost)+jx,cy:y(r.judge),r:6,fill:r.compiled?VC[r.variant]:'var(--surface)',stroke:VC[r.variant],'stroke-width':2.2});
+    c.addEventListener('mousemove',ev=>showTip(ev,r.run,[TT[r.task],'judge '+r.judge+' / 10 · '+usd(r.cost),r.compiled?'compiled':'did not compile']));c.addEventListener('mouseleave',hideTip);s.append(c)});
+  $('#scatter').append(s);
+  V.forEach(v=>$('#scleg').append(el('span',{style:'display:inline-flex;align-items:center;gap:6px'},[el('span',{class:'dot',style:'background:'+VC[v]}),el('span',{text:VN[v]})])));
+  $('#scleg').append(el('span',{style:'display:inline-flex;align-items:center;gap:6px'},[el('span',{class:'dot',style:'border:2px solid var(--ink-3)'}),el('span',{text:'did not compile'})]));
+})();
+
+/* tool mix */
+(function(){
+  const W=520,H=190,L=150,R=40,s=sv('svg',{viewBox:`0 0 ${W} ${H}`});
+  const tot=V.map(v=>{const c={};runs.filter(r=>r.variant===v).forEach(r=>Object.entries(r.toolmix||{}).forEach(([k,n])=>c[k]=(c[k]||0)+n));return c});
+  const mx=Math.max(...tot.map(c=>Object.values(c).reduce((a,b)=>a+b,0)));
+  V.forEach((v,i)=>{const yy=18+i*56;s.append(sv('text',{x:L-12,y:yy+18,'text-anchor':'end',fill:'var(--ink)','font-size':13,'font-family':'var(--f-body)'},VN[v]));
+    let x0=L;const all=Object.values(tot[i]).reduce((a,b)=>a+b,0);
+    MIX.forEach(([k,lab,col])=>{const n=tot[i][k]||0;if(!n)return;const w=(W-L-R)*n/mx;const r=sv('rect',{x:x0,y:yy,width:Math.max(w-2,1),height:28,rx:4,fill:col});
+      r.addEventListener('mousemove',ev=>showTip(ev,VN[v],[lab+': '+n+' calls',Math.round(n/all*100)+'% of this setup\'s calls']));r.addEventListener('mouseleave',hideTip);s.append(r);x0+=w});
+    s.append(sv('text',{x:x0+6,y:yy+19,fill:'var(--ink-2)','font-size':12,'font-family':'var(--f-body)'},all))});
+  $('#mixchart').append(s);
+  MIX.slice(0,5).forEach(([k,lab,col])=>$('#mixleg').append(el('span',{},[el('i',{class:'sw',style:'background:'+col}),el('span',{text:lab})])));
+})();
+
+/* error strip */
+(function(){
+  const ts=['T04','H1','H2'],W=1000,H=230,L=40,R=12,T=14,B=40,s=sv('svg',{viewBox:`0 0 ${W} ${H}`});
+  const rr=runs.filter(r=>ts.includes(r.task));const ym=Math.max(20,...rr.map(r=>r.errors||0));
+  const y=v=>T+(H-T-B)*(1-v/ym);const gw=(W-L-R)/ts.length;
+  [0,5,10,15,20].forEach(v=>{s.append(sv('line',{x1:L,x2:W-R,y1:y(v),y2:y(v),class:'gl'}));s.append(sv('text',{x:L-8,y:y(v)+4,'text-anchor':'end',class:'ax'},v))});
+  ts.forEach((t,i)=>{const gx=L+gw*i;s.append(sv('text',{x:gx+gw/2,y:H-12,'text-anchor':'middle',fill:'var(--ink-2)','font-size':12,'font-family':'var(--f-body)'},t+' · '+TT[t].replace('Rename ','')));
+    V.forEach((v,j)=>{const cx=gx+gw*(j+1)/4;s.append(sv('text',{x:cx,y:T+2,'text-anchor':'middle',class:'ax'},v));
+      of(t,v).forEach((r,k)=>{const c=sv('circle',{cx:cx+(k-1)*13,cy:y(r.errors||0),r:6.5,fill:VC[v],stroke:'var(--surface)','stroke-width':2});
+        c.addEventListener('mousemove',ev=>showTip(ev,r.run,[(r.errors||0)+' error locations',r.compiled?'compiled':'did not compile',...(r.errlist||[]).slice(0,2)]));c.addEventListener('mouseleave',hideTip);s.append(c)})})});
+  $('#errs').append(s);
+})();
+
+/* task cards */
+ORDER.forEach(t=>{
+  const tk=tasks[t],card=el('article',{class:'card task',id:'task-'+t});
+  const [cls,txt]=VERDICT[t];
+  card.append(el('div',{class:'task-head'},[el('span',{class:'id',text:t}),el('h3',{text:TT[t]}),el('span',{class:'pill '+cls,text:txt}),el('span',{class:'pill n',text:tk.type==='qa'?'question':'code change'})]));
+  card.append(el('p',{class:'why',text:WHY[t]}));
+  const grid=el('div',{class:'runs'}),detail=el('div',{class:'detail',hidden:''});
+  V.forEach(v=>of(t,v).forEach(r=>{
+    const res=r.recall!=null?el('span',{class:'res '+(r.recall>=0.9?'ok':'bad'),text:pct(r.recall)+' recall'}):el('span',{class:'res '+(r.compiled?'ok':'bad'),text:r.compiled?'compiled':'failed'});
+    const tm=r.toolmix||{},tt=Object.values(tm).reduce((a,b)=>a+b,0)||1;
+    const b=el('button',{class:'runbtn','aria-pressed':'false','aria-label':'Show details of run '+r.run},[
+      el('div',{class:'top'},[el('span',{style:'display:inline-flex;align-items:center;gap:6px'},[el('span',{class:'dot',style:'background:'+VC[v]}),document.createTextNode(v+' · run '+r.rep)]),res]),
+      el('div',{class:'stat'},[el('span',{},['judge ',el('b',{text:r.judge!=null?String(r.judge):'n/a'})]),el('span',{},[el('b',{text:usd(r.cost)})]),el('span',{},[el('b',{text:String(r.turns)}),' turns'])]),
+      el('div',{class:'mix'},MIX.map(([k,,col])=>tm[k]?el('i',{style:`width:${tm[k]/tt*100}%;background:${col}`}):null))]);
+    b.onclick=()=>{const on=b.getAttribute('aria-pressed')==='true';grid.querySelectorAll('.runbtn').forEach(x=>x.setAttribute('aria-pressed','false'));if(on){detail.hidden=true;return}b.setAttribute('aria-pressed','true');fill(detail,r);detail.hidden=false};
+    grid.append(b)}));
+  card.append(grid,detail);
+  const d=el('details',{},[el('summary',{text:'Show the exact prompt'}),el('div',{class:'prompt',text:tk.prompt})]);
+  card.append(d);$('#tasks').append(card);
+});
+function fill(box,r){
+  box.replaceChildren();
+  const col=(h,kids)=>el('div',{},[el('h4',{text:h}),...kids]);
+  const facts=el('ul',{},[
+    el('li',{text:`${VN[r.variant]}, run ${r.rep}: ${r.turns} turns, ${Math.round(r.secs)} s, ${usd(r.cost)}`}),
+    el('li',{text:`${r.tools} tool calls, ${r.mcp} of them graph queries`}),
+    r.files!=null?el('li',{text:`${r.files} files changed, ${r.compiled?'compiles':'does not compile'}${r.errors?', '+r.errors+' error locations':''}`}):null,
+    r.collateral!=null?el('li',{text:'Judge: '+(r.complete?'complete':'incomplete')+(r.collateral?', touched unrelated code':', no unrelated changes')}):null]);
+  box.append(col('Run',[facts]));
+  if(r.note) box.append(col('Judge notes',[el('p',{class:'small',text:r.note})]));
+  if(r.errlist&&r.errlist.length) box.append(col('First compile errors',[el('ul',{},r.errlist.map(e=>el('li',{class:'mono',text:e})))]));
+  if(r.queries&&r.queries.length) box.append(col('Cypher sent to the graph',r.queries.map(q=>el('pre',{class:'q',text:q}))));
+  if(r.answer) box.append(col(r.compiled!=null?'Agent summary':'Agent answer',[el('div',{class:'answer',text:r.answer})]));
+}
+})();
+</script>
+</body>
+</html>
